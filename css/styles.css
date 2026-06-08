@@ -451,6 +451,11 @@ input[type="checkbox"] {
   border-radius: var(--radius-sm);
 }
 
+.exercise-row.exercise-risk-muted {
+  background: #0b0e12;
+  border-color: #393633;
+}
+
 .exercise-row-summary {
   display: flex;
   align-items: flex-start;
@@ -503,6 +508,15 @@ input[type="checkbox"] {
   padding: 0.65rem;
   background: #080c11;
   border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.risk-note {
+  margin: 0;
+  padding: 0.6rem;
+  color: #fff0d0;
+  background: rgba(66, 49, 19, 0.55);
+  border: 1px solid #735725;
   border-radius: var(--radius-sm);
 }
 

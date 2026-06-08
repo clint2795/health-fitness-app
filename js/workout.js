@@ -119,14 +119,73 @@
     });
   }
 
+  function normalizeMuscle(muscle) {
+    if (window.TrainingLogic && window.TrainingLogic.normalizeMuscle) {
+      return window.TrainingLogic.normalizeMuscle(muscle);
+    }
+
+    return muscle;
+  }
+
+  function getExerciseRiskReasons(exercise, state) {
+    var settings = state.injurySettings || {};
+    var reasons = [];
+
+    if (exercise.status === "avoid") {
+      reasons.push("marked avoid");
+    }
+
+    if (settings.shoulderFriendlyMode && exercise.shoulderFriendly === false) {
+      reasons.push("not shoulder-friendly");
+    }
+
+    if (settings.shoulderFriendlyMode && exercise.shoulderFriendly === "caution") {
+      reasons.push("shoulder caution");
+    }
+
+    if (settings.lowerBackProtection && exercise.lowerBackFriendly === false) {
+      reasons.push("not lower-back-friendly");
+    }
+
+    if (settings.lowerBackProtection && exercise.lowerBackFriendly === "caution") {
+      reasons.push("lower-back caution");
+    }
+
+    if (settings.avoidRiskyOverheadPressing && exercise.id === "high-incline-barbell-press") {
+      reasons.push("risky overhead/incline pressing");
+    }
+
+    if (settings.shoulderFriendlyMode && exercise.id === "upright-row") {
+      reasons.push("upright row shoulder risk");
+    }
+
+    if (settings.lowerBackProtection && (exercise.id === "barbell-row" || exercise.id === "romanian-deadlift")) {
+      reasons.push("lower-back loading risk");
+    }
+
+    return reasons;
+  }
+
+  function statusRank(status) {
+    if (status === "preferred") return 1;
+    if (status === "neutral") return 2;
+    if (status === "conditional") return 3;
+    if (status === "prep") return 4;
+    if (status === "avoid") return 5;
+    return 6;
+  }
+
   function getReplacementOptions(sessionExercise) {
     var state = window.TrainingStorage.getAppState();
-    var muscle = window.TrainingLogic && window.TrainingLogic.normalizeMuscle
-      ? window.TrainingLogic.normalizeMuscle(sessionExercise.primaryMuscle)
-      : sessionExercise.primaryMuscle;
-    var options = window.TrainingLogic && window.TrainingLogic.getCandidateExercises
-      ? window.TrainingLogic.getCandidateExercises(state, muscle)
-      : [];
+    var muscle = normalizeMuscle(sessionExercise.primaryMuscle);
+    var options = (state.exerciseLibrary || []).filter(function (exercise) {
+      return normalizeMuscle(exercise.primaryMuscle) === muscle && exercise.status !== "prep";
+    }).sort(function (a, b) {
+      var aRisk = getExerciseRiskReasons(a, state).length;
+      var bRisk = getExerciseRiskReasons(b, state).length;
+
+      return aRisk - bRisk || statusRank(a.status) - statusRank(b.status) || a.name.localeCompare(b.name);
+    });
 
     return options.filter(function (exercise) {
       return exercise.id !== sessionExercise.exerciseId;
@@ -619,6 +678,8 @@
 
   function renderReplacementDetails(exercise) {
     var details = document.querySelector("#change-exercise-details");
+    var state = window.TrainingStorage.getAppState();
+    var riskReasons = exercise ? getExerciseRiskReasons(exercise, state) : [];
 
     if (!details) {
       return;
@@ -631,7 +692,8 @@
 
     details.textContent = exercise.equipment + " - " + exercise.repRange + " - status: " + exercise.status +
       " - shoulder: " + formatFriendliness(exercise.shoulderFriendly) +
-      " - lower back: " + formatFriendliness(exercise.lowerBackFriendly);
+      " - lower back: " + formatFriendliness(exercise.lowerBackFriendly) +
+      (riskReasons.length ? " - warning: " + riskReasons.join(", ") : "");
   }
 
   function updateReplacementDetails() {
@@ -676,7 +738,10 @@
 
     select.innerHTML = options.length
       ? options.map(function (option) {
-        return '<option value="' + escapeHtml(option.id) + '">' + escapeHtml(option.name) + ' - ' + escapeHtml(option.status) + '</option>';
+        var riskReasons = getExerciseRiskReasons(option, window.TrainingStorage.getAppState());
+        var riskLabel = riskReasons.length ? " - warning" : "";
+
+        return '<option value="' + escapeHtml(option.id) + '">' + escapeHtml(option.name) + ' - ' + escapeHtml(option.status) + riskLabel + '</option>';
       }).join("")
       : '<option value="">No replacement available</option>';
     select.disabled = options.length === 0;
@@ -705,10 +770,17 @@
     var state = window.TrainingStorage.getAppState();
     var replacement = select ? getLibraryExerciseById(state, select.value) : null;
     var keepLoggedSets = false;
+    var riskReasons;
     var originalExerciseId;
     var originalExerciseName;
 
     if (!exercise || !replacement || isExerciseLocked(exercise)) {
+      return;
+    }
+
+    riskReasons = getExerciseRiskReasons(replacement, state);
+
+    if (riskReasons.length && !confirm("This exercise is flagged for the current injury settings: " + riskReasons.join(", ") + ". Use it anyway?")) {
       return;
     }
 

@@ -813,6 +813,45 @@
     return value === true;
   }
 
+  function getExerciseRiskReasons(exercise, state) {
+    var settings = (state || {}).injurySettings || {};
+    var reasons = [];
+
+    if (exercise.status === "avoid") {
+      reasons.push("marked avoid");
+    }
+
+    if (settings.shoulderFriendlyMode && exercise.shoulderFriendly === false) {
+      reasons.push("not shoulder-friendly");
+    }
+
+    if (settings.shoulderFriendlyMode && exercise.shoulderFriendly === "caution") {
+      reasons.push("shoulder caution");
+    }
+
+    if (settings.lowerBackProtection && exercise.lowerBackFriendly === false) {
+      reasons.push("not lower-back-friendly");
+    }
+
+    if (settings.lowerBackProtection && exercise.lowerBackFriendly === "caution") {
+      reasons.push("lower-back caution");
+    }
+
+    if (settings.avoidRiskyOverheadPressing && exercise.id === "high-incline-barbell-press") {
+      reasons.push("risky overhead/incline pressing");
+    }
+
+    if (settings.shoulderFriendlyMode && exercise.id === "upright-row") {
+      reasons.push("upright row shoulder risk");
+    }
+
+    if (settings.lowerBackProtection && (exercise.id === "barbell-row" || exercise.id === "romanian-deadlift")) {
+      reasons.push("lower-back loading risk");
+    }
+
+    return reasons;
+  }
+
   function matchesExerciseSearch(exercise, searchTerm) {
     var text;
 
@@ -927,7 +966,7 @@
       var cards = filteredExercises.filter(function (exercise) {
         return normalizeMuscle(exercise.primaryMuscle) === muscle;
       }).map(function (exercise) {
-        return renderCompactExerciseRow(exercise);
+        return renderCompactExerciseRow(exercise, state);
       }).join("");
 
       return (
@@ -941,9 +980,15 @@
     bindExerciseLibraryActions(container);
   }
 
-  function renderCompactExerciseRow(exercise) {
+  function renderCompactExerciseRow(exercise, state) {
+    var riskReasons = getExerciseRiskReasons(exercise, state);
+    var riskClass = riskReasons.length ? " exercise-risk-muted" : "";
+    var riskMarkup = riskReasons.length
+      ? '<p class="risk-note">Flagged with current settings: ' + escapeHtml(riskReasons.join(", ")) + '</p>'
+      : "";
+
     return (
-      '<article class="exercise-row" data-exercise-row="' + escapeHtml(exercise.id) + '">' +
+      '<article class="exercise-row' + riskClass + '" data-exercise-row="' + escapeHtml(exercise.id) + '">' +
         '<button class="exercise-row-summary" type="button" data-toggle-exercise="' + escapeHtml(exercise.id) + '" aria-expanded="false">' +
           '<span>' +
             '<strong>' + escapeHtml(exercise.name) + '</strong>' +
@@ -955,6 +1000,7 @@
           '<span class="tag">shoulder: ' + escapeHtml(formatFriendliness(exercise.shoulderFriendly)) + '</span>' +
           '<span class="tag">lower back: ' + escapeHtml(formatFriendliness(exercise.lowerBackFriendly)) + '</span>' +
         '</div>' +
+        riskMarkup +
         '<div class="exercise-row-details" hidden>' +
           '<dl class="compact-details">' +
             '<div><dt>Rep range</dt><dd>' + escapeHtml(exercise.repRange) + '</dd></div>' +
