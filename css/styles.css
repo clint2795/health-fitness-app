@@ -364,6 +364,8 @@ input[type="checkbox"] {
 
 .priority-card,
 .exercise-preference-card,
+.preset-card,
+.template-card,
 .plan-card,
 .prep-card,
 .volume-status-card,
@@ -393,6 +395,20 @@ input[type="checkbox"] {
   margin-top: 0.85rem;
 }
 
+.preset-summary {
+  margin: 1rem 0;
+}
+
+.template-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.template-card.selected {
+  border-color: var(--primary);
+  background: linear-gradient(180deg, #0d1720, var(--surface));
+}
+
 .exercise-group {
   display: grid;
   gap: 0.85rem;
@@ -405,6 +421,70 @@ input[type="checkbox"] {
 
 .exercise-card {
   background: var(--surface-soft);
+}
+
+.exercise-row {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  background: #0d1319;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.exercise-row-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.exercise-row-summary strong,
+.exercise-row-summary .subtle {
+  display: block;
+}
+
+.exercise-row-summary strong {
+  margin-bottom: 0.25rem;
+  font-size: 1.05rem;
+}
+
+.compact-safety-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.exercise-row-details {
+  display: grid;
+  gap: 0.8rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.exercise-row-details[hidden] {
+  display: none;
+}
+
+.compact-details {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.compact-details div {
+  padding: 0.75rem;
+  background: #080c11;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .status-preferred,

@@ -29,7 +29,7 @@
     biceps: ["biceps", "Biceps"],
     triceps: ["triceps", "Triceps"],
     backWidth: ["backWidth", "Back width"],
-    backThickness: ["backThickness", "Back thickness"],
+    backThickness: ["backThickness", "Back thickness", "Back Thickness / Support"],
     rearDelts: ["rearDelts", "Rear delts"],
     legs: ["legs", "Legs"],
     absWaist: ["absWaist", "Abs / waist"],
@@ -37,16 +37,16 @@
   };
 
   var muscleLabels = {
-    sideDelts: "Side delts",
-    upperChest: "Upper chest",
+    sideDelts: "Side Delts",
+    upperChest: "Upper Chest",
     chest: "Chest",
     biceps: "Biceps",
     triceps: "Triceps",
-    backWidth: "Back width",
-    backThickness: "Back thickness",
-    rearDelts: "Rear delts",
+    backWidth: "Back Width",
+    backThickness: "Back Thickness / Support",
+    rearDelts: "Rear Delts",
     legs: "Legs",
-    absWaist: "Abs / waist",
+    absWaist: "Abs / Waist",
     shoulderPrep: "Shoulder Prep / Warm-Up"
   };
 

@@ -658,13 +658,177 @@
     absWaist: ["machine-crunch", "dead-bug"]
   };
 
+  var goalPresets = [
+    {
+      id: "cyprus-visual-phase",
+      name: "Cyprus Visual Phase",
+      purpose: "Tighten waist, keep fullness, prioritize side delts, upper chest, arms, and back width with legs at maintenance/moderate volume.",
+      trainingDaysPerWeek: 5,
+      muscleUpdates: {
+        sideDelts: { priority: "very high", goal: "grow", frequency: "3-5x/week", startingSets: 14, maxSets: 22 },
+        upperChest: { priority: "high", goal: "grow", frequency: "2-3x/week", startingSets: 10, maxSets: 18 },
+        biceps: { priority: "high", goal: "grow", frequency: "2-4x/week", startingSets: 9, maxSets: 16 },
+        triceps: { priority: "high", goal: "grow", frequency: "2-4x/week", startingSets: 9, maxSets: 16 },
+        backWidth: { priority: "high", goal: "grow", frequency: "2-3x/week", startingSets: 10, maxSets: 18 },
+        rearDelts: { priority: "medium", goal: "support", frequency: "2-3x/week", startingSets: 6, maxSets: 14 },
+        legs: { priority: "medium", goal: "maintain / moderate growth", frequency: "1-2x/week", startingSets: 7, maxSets: 12 }
+      },
+      exercisePreferences: exercisePreferences
+    },
+    {
+      id: "shoulder-width-focus",
+      name: "Shoulder Width Focus",
+      purpose: "Side delt priority with rear delt support and upper chest support.",
+      trainingDaysPerWeek: 5,
+      muscleUpdates: {
+        sideDelts: { priority: "very high", goal: "grow", frequency: "3-5x/week", startingSets: 16, maxSets: 24 },
+        rearDelts: { priority: "high", goal: "support / grow", frequency: "2-4x/week", startingSets: 8, maxSets: 16 },
+        upperChest: { priority: "medium", goal: "support", frequency: "2-3x/week", startingSets: 8, maxSets: 16 },
+        legs: { priority: "low", goal: "maintain", frequency: "1-2x/week", startingSets: 6, maxSets: 10 }
+      },
+      exercisePreferences: {
+        sideDelts: ["cable-lateral-raise", "machine-lateral-raise", "lean-away-cable-lateral-raise"],
+        rearDelts: ["reverse-pec-deck", "cable-rear-delt-fly"],
+        upperChest: ["incline-cable-press", "incline-machine-press"]
+      }
+    },
+    {
+      id: "upper-chest-arms-focus",
+      name: "Upper Chest + Arms Focus",
+      purpose: "Upper chest, biceps, and triceps priority with side delts secondary.",
+      trainingDaysPerWeek: 5,
+      muscleUpdates: {
+        upperChest: { priority: "very high", goal: "grow", frequency: "2-4x/week", startingSets: 12, maxSets: 20 },
+        biceps: { priority: "high", goal: "grow", frequency: "2-4x/week", startingSets: 10, maxSets: 18 },
+        triceps: { priority: "high", goal: "grow", frequency: "2-4x/week", startingSets: 10, maxSets: 18 },
+        sideDelts: { priority: "high", goal: "grow", frequency: "2-4x/week", startingSets: 10, maxSets: 20 }
+      },
+      exercisePreferences: {
+        upperChest: ["incline-cable-press", "incline-machine-press", "flat-dumbbell-press"],
+        biceps: ["cable-curl", "machine-preacher-curl", "hammer-curl"],
+        triceps: ["rope-pushdown", "cross-body-cable-extension", "cable-overhead-extension"]
+      }
+    },
+    {
+      id: "back-width-focus",
+      name: "Back Width Focus",
+      purpose: "Pulldown, lat-prayer, and pullover emphasis with biceps and rear delt support.",
+      trainingDaysPerWeek: 5,
+      muscleUpdates: {
+        backWidth: { priority: "very high", goal: "grow", frequency: "2-4x/week", startingSets: 14, maxSets: 22 },
+        biceps: { priority: "high", goal: "support / grow", frequency: "2-4x/week", startingSets: 9, maxSets: 16 },
+        rearDelts: { priority: "medium", goal: "support", frequency: "2-3x/week", startingSets: 7, maxSets: 14 }
+      },
+      exercisePreferences: {
+        backWidth: ["neutral-grip-pulldown", "underhand-grip-pulldown", "cable-lat-prayer"],
+        biceps: ["cable-curl", "hammer-curl"],
+        rearDelts: ["reverse-pec-deck", "cable-rear-delt-fly"]
+      }
+    },
+    {
+      id: "fat-loss-maintenance",
+      name: "Fat Loss / Maintenance",
+      purpose: "Maintain muscle with moderate volume, lower fatigue, and walking/cardio support.",
+      trainingDaysPerWeek: 4,
+      muscleUpdates: {
+        sideDelts: { priority: "high", goal: "maintain / grow", frequency: "2-4x/week", startingSets: 10, maxSets: 18 },
+        upperChest: { priority: "medium", goal: "maintain", frequency: "2-3x/week", startingSets: 8, maxSets: 14 },
+        biceps: { priority: "medium", goal: "maintain", frequency: "2-3x/week", startingSets: 7, maxSets: 12 },
+        triceps: { priority: "medium", goal: "maintain", frequency: "2-3x/week", startingSets: 7, maxSets: 12 },
+        backWidth: { priority: "medium", goal: "maintain", frequency: "2-3x/week", startingSets: 8, maxSets: 14 },
+        legs: { priority: "low", goal: "maintain", frequency: "1-2x/week", startingSets: 6, maxSets: 10 }
+      },
+      exercisePreferences: {}
+    },
+    {
+      id: "balanced-hypertrophy",
+      name: "Balanced Hypertrophy",
+      purpose: "Balanced training across all major muscle groups.",
+      trainingDaysPerWeek: 5,
+      muscleUpdates: {
+        sideDelts: { priority: "high", goal: "grow", frequency: "2-4x/week", startingSets: 10, maxSets: 18 },
+        upperChest: { priority: "high", goal: "grow", frequency: "2-3x/week", startingSets: 9, maxSets: 16 },
+        biceps: { priority: "medium", goal: "grow", frequency: "2-3x/week", startingSets: 8, maxSets: 14 },
+        triceps: { priority: "medium", goal: "grow", frequency: "2-3x/week", startingSets: 8, maxSets: 14 },
+        backWidth: { priority: "high", goal: "grow", frequency: "2-3x/week", startingSets: 10, maxSets: 18 },
+        rearDelts: { priority: "medium", goal: "support", frequency: "2-3x/week", startingSets: 7, maxSets: 14 },
+        legs: { priority: "medium", goal: "grow", frequency: "1-2x/week", startingSets: 9, maxSets: 14 }
+      },
+      exercisePreferences: {}
+    },
+    {
+      id: "recovery-friendly-phase",
+      name: "Recovery-Friendly Phase",
+      purpose: "Lower joint stress with machine/cable bias and shoulder/back-friendly exercise choices.",
+      trainingDaysPerWeek: 4,
+      muscleUpdates: {
+        sideDelts: { priority: "high", goal: "grow", frequency: "2-4x/week", startingSets: 10, maxSets: 18 },
+        upperChest: { priority: "medium", goal: "maintain / grow", frequency: "2-3x/week", startingSets: 8, maxSets: 14 },
+        backWidth: { priority: "medium", goal: "maintain / grow", frequency: "2-3x/week", startingSets: 8, maxSets: 14 },
+        legs: { priority: "low", goal: "maintain", frequency: "1-2x/week", startingSets: 6, maxSets: 10 }
+      },
+      exercisePreferences: {
+        sideDelts: ["machine-lateral-raise", "cable-lateral-raise"],
+        upperChest: ["incline-machine-press", "incline-cable-press", "flat-dumbbell-press"],
+        backWidth: ["neutral-grip-pulldown", "machine-pullover", "cable-lat-prayer"],
+        legs: ["leg-press", "leg-extension", "seated-hamstring-curl"]
+      }
+    }
+  ];
+
+  var sessionTemplates = [
+    {
+      id: "visual-upper-priority",
+      name: "Visual Upper Priority",
+      targetMuscles: ["Side Delts", "Upper Chest", "Triceps"],
+      setRange: "8-14 working sets",
+      recoveryNote: "Upper-priority session with shoulder comfort as the limiter."
+    },
+    {
+      id: "back-width-biceps",
+      name: "Back Width + Biceps",
+      targetMuscles: ["Back Width", "Biceps", "Rear Delts"],
+      setRange: "8-14 working sets",
+      recoveryNote: "Lat-first pull session with supported rear delt and arm work."
+    },
+    {
+      id: "delt-arm-pump",
+      name: "Delt + Arm Pump",
+      targetMuscles: ["Side Delts", "Biceps", "Triceps"],
+      setRange: "8-13 working sets",
+      recoveryNote: "Lower systemic fatigue, good for cable/machine-biased work."
+    },
+    {
+      id: "upper-chest-back-width",
+      name: "Upper Chest + Back Width",
+      targetMuscles: ["Upper Chest", "Back Width", "Side Delts optional"],
+      setRange: "8-15 working sets",
+      recoveryNote: "Alternates pressing and lat work while keeping lower back quiet."
+    },
+    {
+      id: "leg-maintenance",
+      name: "Leg Maintenance",
+      targetMuscles: ["Legs", "Calves if available", "Side Delts optional"],
+      setRange: "6-11 working sets",
+      recoveryNote: "Machine-based lower-body work with optional low-cost delt volume."
+    },
+    {
+      id: "recovery-friendly-upper",
+      name: "Recovery-Friendly Upper",
+      targetMuscles: ["Upper Chest", "Side Delts", "Back Width"],
+      setRange: "7-12 working sets",
+      recoveryNote: "Machines and cables preferred; avoid chasing load when joints feel off."
+    }
+  ];
+
   window.TrainingData = {
     userProfile: {
       goalName: "Cyprus Visual Phase",
       bodyweightKg: 82.5,
       targetDate: "2026-07-14",
       defaultTrainingTime: "01:45",
-      preferredSessionLengthMinutes: 70
+      preferredSessionLengthMinutes: 70,
+      goalDescription: "Tighten waist, keep fullness, and bias visible upper-body priorities while managing recovery."
     },
     mesocycleSettings: {
       currentWeek: 1,
@@ -687,6 +851,10 @@
     musclePriorities: musclePriorities,
     exerciseLibrary: exerciseLibrary,
     exercisePreferences: exercisePreferences,
+    goalPresets: goalPresets,
+    sessionTemplates: sessionTemplates,
+    activeGoalPreset: "cyprus-visual-phase",
+    selectedSessionTemplate: "",
     placeholderWorkout: [
       { muscle: "Upper chest", exercise: "Incline machine press", sets: 2 },
       { muscle: "Side delts", exercise: "Cable lateral raise", sets: 3 },

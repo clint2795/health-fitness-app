@@ -18,7 +18,11 @@
       musclePriorities: clone(data.musclePriorities || []),
       injurySettings: clone(data.injurySettings || {}),
       exerciseLibrary: clone(data.exerciseLibrary || []),
-      exercisePreferences: clone(data.exercisePreferences || {})
+      exercisePreferences: clone(data.exercisePreferences || {}),
+      goalPresets: clone(data.goalPresets || []),
+      sessionTemplates: clone(data.sessionTemplates || []),
+      activeGoalPreset: data.activeGoalPreset || "",
+      selectedSessionTemplate: data.selectedSessionTemplate || ""
     };
   }
 
@@ -44,7 +48,11 @@
       musclePriorities: mergeById(defaultState.musclePriorities, savedState.musclePriorities),
       injurySettings: Object.assign({}, defaultState.injurySettings, savedState.injurySettings || {}),
       exerciseLibrary: defaultState.exerciseLibrary,
-      exercisePreferences: Object.assign({}, defaultState.exercisePreferences, savedState.exercisePreferences || {})
+      exercisePreferences: Object.assign({}, defaultState.exercisePreferences, savedState.exercisePreferences || {}),
+      goalPresets: defaultState.goalPresets,
+      sessionTemplates: defaultState.sessionTemplates,
+      activeGoalPreset: savedState.activeGoalPreset || defaultState.activeGoalPreset,
+      selectedSessionTemplate: savedState.selectedSessionTemplate || defaultState.selectedSessionTemplate
     };
   }
 
