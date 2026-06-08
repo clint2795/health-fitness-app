@@ -17,7 +17,8 @@
       rirTargets: clone(data.rirTargets || []),
       musclePriorities: clone(data.musclePriorities || []),
       injurySettings: clone(data.injurySettings || {}),
-      exerciseLibrary: clone(data.exerciseLibrary || [])
+      exerciseLibrary: clone(data.exerciseLibrary || []),
+      exercisePreferences: clone(data.exercisePreferences || {})
     };
   }
 
@@ -42,7 +43,8 @@
       rirTargets: savedState.rirTargets || defaultState.rirTargets,
       musclePriorities: mergeById(defaultState.musclePriorities, savedState.musclePriorities),
       injurySettings: Object.assign({}, defaultState.injurySettings, savedState.injurySettings || {}),
-      exerciseLibrary: defaultState.exerciseLibrary
+      exerciseLibrary: defaultState.exerciseLibrary,
+      exercisePreferences: Object.assign({}, defaultState.exercisePreferences, savedState.exercisePreferences || {})
     };
   }
 

@@ -20,11 +20,41 @@
     upperChest: "Upper chest",
     chest: "Chest",
     backWidth: "Back width",
+    backThickness: "Back thickness",
     rearDelts: "Rear delts",
     biceps: "Biceps",
     triceps: "Triceps",
-    legs: "Legs"
+    legs: "Legs",
+    absWaist: "Abs / waist"
   };
+
+  var muscleAliases = {
+    shoulderPrep: ["shoulderPrep", "Shoulder Prep / Warm-Up"],
+    sideDelts: ["sideDelts", "Side delts"],
+    upperChest: ["upperChest", "Upper chest"],
+    chest: ["chest", "Chest"],
+    backWidth: ["backWidth", "Back width"],
+    backThickness: ["backThickness", "Back thickness"],
+    rearDelts: ["rearDelts", "Rear delts"],
+    biceps: ["biceps", "Biceps"],
+    triceps: ["triceps", "Triceps"],
+    legs: ["legs", "Legs"],
+    absWaist: ["absWaist", "Abs / waist"]
+  };
+
+  var exercisePreferenceCategories = [
+    "shoulderPrep",
+    "sideDelts",
+    "upperChest",
+    "chest",
+    "backWidth",
+    "backThickness",
+    "rearDelts",
+    "biceps",
+    "triceps",
+    "legs",
+    "absWaist"
+  ];
 
   function escapeHtml(value) {
     return String(value)
@@ -32,6 +62,15 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function normalizeMuscle(muscle) {
+    var keys = Object.keys(muscleAliases);
+    var matched = keys.find(function (key) {
+      return muscleAliases[key].indexOf(muscle) !== -1;
+    });
+
+    return matched || muscle;
   }
 
   function renderNavigation() {
@@ -323,6 +362,81 @@
     }).join("");
   }
 
+  function getExercisesForPreferenceCategory(state, muscle) {
+    return (state.exerciseLibrary || []).filter(function (exercise) {
+      return normalizeMuscle(exercise.primaryMuscle) === muscle;
+    }).sort(function (a, b) {
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  function getExerciseOptionLabel(exercise) {
+    var labels = [exercise.name, exercise.status];
+
+    if (exercise.shoulderFriendly === "caution") {
+      labels.push("shoulder caution");
+    }
+
+    if (exercise.lowerBackFriendly === "caution") {
+      labels.push("lower-back caution");
+    }
+
+    if (exercise.status === "avoid") {
+      labels.push("avoid");
+    }
+
+    return labels.join(" - ");
+  }
+
+  function renderExercisePreferenceSelect(muscle, slot, options, selectedId) {
+    var choices = '<option value="">No preference</option>' + options.map(function (exercise) {
+      var selected = exercise.id === selectedId ? " selected" : "";
+
+      return '<option value="' + escapeHtml(exercise.id) + '"' + selected + '>' + escapeHtml(getExerciseOptionLabel(exercise)) + '</option>';
+    }).join("");
+
+    return (
+      '<label>' + escapeHtml(slot) +
+        '<select data-exercise-preference="' + escapeHtml(muscle) + '">' +
+          choices +
+        '</select>' +
+      '</label>'
+    );
+  }
+
+  function renderExercisePreferences(state) {
+    var container = document.querySelector("#exercise-preferences");
+    var preferences = state.exercisePreferences || {};
+
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = exercisePreferenceCategories.map(function (muscle) {
+      var options = getExercisesForPreferenceCategory(state, muscle);
+      var saved = preferences[muscle] || [];
+
+      if (options.length === 0) {
+        return "";
+      }
+
+      return (
+        '<article class="exercise-preference-card">' +
+          '<div class="card-header">' +
+            '<div>' +
+              '<h3>' + escapeHtml(getMuscleLabel(muscle)) + '</h3>' +
+              '<p class="subtle">Generator tries these first when they pass safety filters.</p>' +
+            '</div>' +
+          '</div>' +
+          '<div class="preference-select-row">' +
+            renderExercisePreferenceSelect(muscle, "First choice", options, saved[0]) +
+            renderExercisePreferenceSelect(muscle, "Backup", options, saved[1]) +
+          '</div>' +
+        '</article>'
+      );
+    }).join("");
+  }
+
   function loadSetupForm() {
     var state = window.TrainingStorage.getAppState();
 
@@ -333,6 +447,7 @@
     setValue("session-length-minutes", state.userProfile.preferredSessionLengthMinutes);
     setValue("current-week", state.mesocycleSettings.currentWeek);
     renderPriorityEditor(state.musclePriorities);
+    renderExercisePreferences(state);
     renderInjurySettings(state.injurySettings);
   }
 
@@ -340,6 +455,7 @@
     var state = window.TrainingStorage.getAppState();
     var priorityCards = document.querySelectorAll("[data-muscle-id]");
     var injuryInputs = document.querySelectorAll("[data-injury-setting]");
+    var preferenceInputs = document.querySelectorAll("[data-exercise-preference]");
 
     state.userProfile.bodyweightKg = getNumberValue("bodyweight-kg", state.userProfile.bodyweightKg);
     state.userProfile.preferredSessionLengthMinutes = getNumberValue("session-length-minutes", state.userProfile.preferredSessionLengthMinutes);
@@ -361,6 +477,17 @@
 
     injuryInputs.forEach(function (input) {
       state.injurySettings[input.dataset.injurySetting] = input.checked;
+    });
+
+    state.exercisePreferences = {};
+    preferenceInputs.forEach(function (input) {
+      var muscle = input.dataset.exercisePreference;
+
+      state.exercisePreferences[muscle] = state.exercisePreferences[muscle] || [];
+
+      if (input.value && state.exercisePreferences[muscle].indexOf(input.value) === -1) {
+        state.exercisePreferences[muscle].push(input.value);
+      }
     });
 
     return state;
@@ -393,8 +520,10 @@
 
   function getUniqueMuscles(exercises) {
     return exercises.reduce(function (muscles, exercise) {
-      if (muscles.indexOf(exercise.primaryMuscle) === -1) {
-        muscles.push(exercise.primaryMuscle);
+      var muscle = normalizeMuscle(exercise.primaryMuscle);
+
+      if (muscles.indexOf(muscle) === -1) {
+        muscles.push(muscle);
       }
 
       return muscles;
@@ -402,7 +531,9 @@
   }
 
   function getMuscleLabel(muscle) {
-    return muscleDisplayLabels[muscle] || muscle;
+    var normalized = normalizeMuscle(muscle);
+
+    return muscleDisplayLabels[normalized] || muscle;
   }
 
   function isFriendly(value) {
@@ -413,7 +544,9 @@
     filters = filters || {};
 
     return exercises.filter(function (exercise) {
-      if (filters.muscle && filters.muscle !== "all" && exercise.primaryMuscle !== filters.muscle) {
+      var exerciseMuscle = normalizeMuscle(exercise.primaryMuscle);
+
+      if (filters.muscle && filters.muscle !== "all" && exerciseMuscle !== filters.muscle) {
         return false;
       }
 
@@ -482,7 +615,7 @@
 
     container.innerHTML = muscles.map(function (muscle) {
       var cards = filteredExercises.filter(function (exercise) {
-        return exercise.primaryMuscle === muscle;
+        return normalizeMuscle(exercise.primaryMuscle) === muscle;
       }).map(function (exercise) {
         return (
           '<article class="card exercise-card">' +
@@ -685,6 +818,30 @@
     }).length;
   }
 
+  function getHistoryExerciseLabel(exercise) {
+    if (!exercise.substitution) {
+      return exercise.name;
+    }
+
+    return exercise.name + " (planned: " + exercise.substitution.originalExerciseName + ")";
+  }
+
+  function renderLoggedExerciseSummary(exercise) {
+    var loggedCount = countLoggedSets(exercise);
+    var setCount = loggedCount || 0;
+    var summary = escapeHtml(exercise.name) + ": " + escapeHtml(setCount) + " sets";
+
+    if (exercise.substitution) {
+      summary += '<br><span class="subtle">Originally planned: ' + escapeHtml(exercise.substitution.originalExerciseName) + '</span>';
+
+      if (exercise.substitution.reason) {
+        summary += '<br><span class="subtle">Reason: ' + escapeHtml(exercise.substitution.reason) + '</span>';
+      }
+    }
+
+    return summary;
+  }
+
   function getWeeklySetTotals(history) {
     return history.reduce(function (totals, session) {
       (session.exercises || []).forEach(function (exercise) {
@@ -704,13 +861,10 @@
       ? window.TrainingFeedback.summarizeSessionFeedback(session.feedback)
       : null;
     var exerciseNames = (session.exercises || []).map(function (exercise) {
-      return exercise.name;
+      return getHistoryExerciseLabel(exercise);
     }).join(", ");
     var loggedSummary = (session.exercises || []).map(function (exercise) {
-      var loggedCount = countLoggedSets(exercise);
-      var setCount = loggedCount || 0;
-
-      return escapeHtml(exercise.name) + ": " + escapeHtml(setCount) + " sets";
+      return renderLoggedExerciseSummary(exercise);
     }).join("<br>");
     var signals = feedbackSummary ? Object.keys(feedbackSummary.signals).map(function (muscle) {
       return '<span class="tag">' + escapeHtml(getMuscleLabel(muscle)) + ': ' + escapeHtml(feedbackSummary.signals[muscle]) + '</span>';

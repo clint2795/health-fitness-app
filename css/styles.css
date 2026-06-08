@@ -363,6 +363,7 @@ input[type="checkbox"] {
 }
 
 .priority-card,
+.exercise-preference-card,
 .plan-card,
 .prep-card,
 .volume-status-card,
@@ -384,6 +385,12 @@ input[type="checkbox"] {
 
 .priority-card .set-row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.preference-select-row {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
 }
 
 .exercise-group {
@@ -565,6 +572,43 @@ input[type="checkbox"] {
   padding-top: 0.35rem;
 }
 
+.substitution-note {
+  margin: 0;
+  padding: 0.8rem;
+  color: #fff0d0;
+  background: var(--warning-soft);
+  border: 1px solid #8a6728;
+  border-radius: var(--radius-sm);
+}
+
+.exercise-modal[hidden] {
+  display: none;
+}
+
+.exercise-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  align-items: end;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.exercise-modal-card {
+  display: grid;
+  gap: 0.9rem;
+  width: min(100%, 42rem);
+  max-height: 88vh;
+  margin: 0 auto;
+  padding: 1rem;
+  overflow: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
 .exercise-actions.completed {
   padding: 0.85rem;
   background: #0b1712;
@@ -712,5 +756,13 @@ input[type="checkbox"] {
 
   .form-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .preference-select-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exercise-modal {
+    align-items: center;
   }
 }

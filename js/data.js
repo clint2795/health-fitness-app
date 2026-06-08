@@ -367,6 +367,18 @@
       notes: "Allows individual shoulder path and lat focus."
     },
     {
+      id: "underhand-grip-pulldown",
+      name: "Underhand grip pulldown",
+      primaryMuscle: "Back width",
+      secondaryMuscles: ["Biceps"],
+      equipment: "Cable pulldown",
+      repRange: "8-15",
+      shoulderFriendly: "caution",
+      lowerBackFriendly: true,
+      status: "preferred",
+      notes: "Used during live gym testing as a substitute for neutral-grip pulldown. Back-width movement with more biceps involvement."
+    },
+    {
       id: "assisted-pull-up",
       name: "Assisted pull-up",
       primaryMuscle: "Back width",
@@ -389,6 +401,18 @@
       lowerBackFriendly: true,
       status: "preferred",
       notes: "Great lower-back-friendly lat isolation when the machine fits."
+    },
+    {
+      id: "cable-lat-prayer",
+      name: "Cable lat prayer",
+      primaryMuscle: "Back width",
+      secondaryMuscles: ["Triceps"],
+      equipment: "Cable stack",
+      repRange: "10-20",
+      shoulderFriendly: "caution",
+      lowerBackFriendly: true,
+      status: "preferred",
+      notes: "Used during live gym testing as a substitute when machine pullover was not available."
     },
     {
       id: "wide-grip-pulldown",
@@ -620,6 +644,20 @@
     }
   ];
 
+  var exercisePreferences = {
+    shoulderPrep: ["dead-hang"],
+    sideDelts: ["cable-lateral-raise", "machine-lateral-raise"],
+    upperChest: ["incline-cable-press", "incline-machine-press"],
+    chest: ["flat-dumbbell-press"],
+    biceps: ["cable-curl", "machine-preacher-curl"],
+    triceps: ["rope-pushdown", "cross-body-cable-extension"],
+    backWidth: ["neutral-grip-pulldown", "underhand-grip-pulldown", "cable-lat-prayer"],
+    backThickness: ["chest-supported-row", "machine-row"],
+    rearDelts: ["reverse-pec-deck", "cable-rear-delt-fly"],
+    legs: ["leg-press", "leg-extension"],
+    absWaist: ["machine-crunch", "dead-bug"]
+  };
+
   window.TrainingData = {
     userProfile: {
       goalName: "Cyprus Visual Phase",
@@ -648,6 +686,7 @@
     },
     musclePriorities: musclePriorities,
     exerciseLibrary: exerciseLibrary,
+    exercisePreferences: exercisePreferences,
     placeholderWorkout: [
       { muscle: "Upper chest", exercise: "Incline machine press", sets: 2 },
       { muscle: "Side delts", exercise: "Cable lateral raise", sets: 3 },

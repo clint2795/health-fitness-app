@@ -29,8 +29,10 @@
     biceps: ["biceps", "Biceps"],
     triceps: ["triceps", "Triceps"],
     backWidth: ["backWidth", "Back width"],
+    backThickness: ["backThickness", "Back thickness"],
     rearDelts: ["rearDelts", "Rear delts"],
     legs: ["legs", "Legs"],
+    absWaist: ["absWaist", "Abs / waist"],
     shoulderPrep: ["shoulderPrep", "Shoulder Prep / Warm-Up"]
   };
 
@@ -41,8 +43,10 @@
     biceps: "Biceps",
     triceps: "Triceps",
     backWidth: "Back width",
+    backThickness: "Back thickness",
     rearDelts: "Rear delts",
     legs: "Legs",
+    absWaist: "Abs / waist",
     shoulderPrep: "Shoulder Prep / Warm-Up"
   };
 
@@ -53,8 +57,10 @@
     biceps: { cap: 6, count: 1, minimum: 2 },
     triceps: { cap: 6, count: 1, minimum: 2 },
     backWidth: { cap: 8, count: 2, minimum: 3 },
+    backThickness: { cap: 8, count: 2, minimum: 3 },
     rearDelts: { cap: 5, count: 1, minimum: 2 },
-    legs: { cap: 8, count: 3, minimum: 4 }
+    legs: { cap: 8, count: 3, minimum: 4 },
+    absWaist: { cap: 4, count: 1, minimum: 2 }
   };
 
   var exerciseNotes = {
@@ -64,8 +70,10 @@
     biceps: "Controlled arm work without body swing.",
     triceps: "Joint-friendly triceps work.",
     backWidth: "Lat-focused work with low lower-back demand.",
+    backThickness: "Supported row work with low lower-back demand.",
     rearDelts: "Rear delt support work.",
-    legs: "Machine-based lower-body work to limit lower-back cost."
+    legs: "Machine-based lower-body work to limit lower-back cost.",
+    absWaist: "Trunk work selected around shoulder and lower-back tolerance."
   };
 
   function getState() {
@@ -156,6 +164,41 @@
     return statusRank(a.status) - statusRank(b.status) || a.name.localeCompare(b.name);
   }
 
+  function getExercisePreferenceIds(state, muscle) {
+    var preferences = state.exercisePreferences || {};
+    var direct = preferences[muscle] || [];
+
+    if (muscle === "upperChest") {
+      direct = direct.concat(preferences.chest || []);
+    }
+
+    return direct.filter(Boolean);
+  }
+
+  function applyExercisePreferences(candidates, state, muscle) {
+    var preferenceIds = getExercisePreferenceIds(state, muscle);
+    var preferred = [];
+    var remaining = [];
+
+    if (preferenceIds.length === 0) {
+      return candidates;
+    }
+
+    candidates.forEach(function (exercise) {
+      if (preferenceIds.indexOf(exercise.id) !== -1) {
+        preferred.push(exercise);
+      } else {
+        remaining.push(exercise);
+      }
+    });
+
+    preferred.sort(function (a, b) {
+      return preferenceIds.indexOf(a.id) - preferenceIds.indexOf(b.id);
+    });
+
+    return preferred.concat(remaining);
+  }
+
   function getCandidateExercises(state, muscle) {
     var candidates = state.exerciseLibrary
       .filter(function (exercise) {
@@ -187,7 +230,7 @@
       candidates = safeFirst.concat(conditionalSmith);
     }
 
-    return candidates;
+    return applyExercisePreferences(candidates, state, muscle);
   }
 
   function createPlannedExercise(exercise, muscle, sets, targetRir) {
@@ -626,6 +669,9 @@
     getRecoveryWarnings: getRecoveryWarnings,
     getWeeklySetPlaceholders: getWeeklySetPlaceholders,
     getMuscleLabel: getMuscleLabel,
+    normalizeMuscle: normalizeMuscle,
+    passesInjuryRules: passesInjuryRules,
+    getCandidateExercises: getCandidateExercises,
     calculateWeeklyVolume: calculateWeeklyVolume,
     calculateRemainingWeeklySets: calculateRemainingWeeklySets
   };

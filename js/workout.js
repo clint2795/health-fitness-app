@@ -107,6 +107,54 @@
     );
   }
 
+  function formatFriendliness(value) {
+    if (value === true) return "yes";
+    if (value === false) return "no";
+    return value;
+  }
+
+  function getLibraryExerciseById(state, exerciseId) {
+    return (state.exerciseLibrary || []).find(function (exercise) {
+      return exercise.id === exerciseId;
+    });
+  }
+
+  function getReplacementOptions(sessionExercise) {
+    var state = window.TrainingStorage.getAppState();
+    var muscle = window.TrainingLogic && window.TrainingLogic.normalizeMuscle
+      ? window.TrainingLogic.normalizeMuscle(sessionExercise.primaryMuscle)
+      : sessionExercise.primaryMuscle;
+    var options = window.TrainingLogic && window.TrainingLogic.getCandidateExercises
+      ? window.TrainingLogic.getCandidateExercises(state, muscle)
+      : [];
+
+    return options.filter(function (exercise) {
+      return exercise.id !== sessionExercise.exerciseId;
+    });
+  }
+
+  function hasAnyLoggedSetData(exercise) {
+    ensureLoggedSets(exercise);
+
+    return exercise.loggedSets.some(function (set) {
+      return hasLoggedValue(set) || isSetCompleted(set) || set.skipped;
+    });
+  }
+
+  function getSubstitutionMarkup(exercise) {
+    if (!exercise.substitution) {
+      return "";
+    }
+
+    return (
+      '<p class="substitution-note">' +
+        '<strong>Changed exercise</strong><br>' +
+        'Originally planned: ' + escapeHtml(exercise.substitution.originalExerciseName) + '<br>' +
+        'Reason: ' + escapeHtml(exercise.substitution.reason || "not recorded") +
+      '</p>'
+    );
+  }
+
   function renderPrep(session) {
     var container = document.querySelector("#workout-prep");
 
@@ -176,6 +224,7 @@
 
     return (
       '<div class="exercise-actions" data-exercise-actions="' + exerciseIndex + '">' +
+        '<button class="button" type="button" data-change-exercise="' + exerciseIndex + '">Change Exercise</button>' +
         '<button class="button add-set-button" type="button" data-add-set="' + exerciseIndex + '">Add Set</button>' +
         '<button class="button button-primary complete-exercise-button" type="button" data-complete-exercise="' + exerciseIndex + '">Complete This Exercise</button>' +
       '</div>'
@@ -214,6 +263,7 @@
             '<span class="badge">' + getCompletedSetCount(exercise) + ' / ' + escapeHtml(exercise.loggedSets.length) + ' saved</span>' +
           '</div>' +
           getProgressMarkup(exercise) +
+          getSubstitutionMarkup(exercise) +
           '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' +
           createSetInputs(index, exercise) +
           getExerciseActionsMarkup(index, exercise) +
@@ -556,6 +606,149 @@
     focusExerciseCard(exerciseIndex);
   }
 
+  function closeChangeExerciseModal() {
+    var modal = document.querySelector("#change-exercise-modal");
+
+    if (modal) {
+      modal.hidden = true;
+      modal.dataset.exerciseIndex = "";
+    }
+  }
+
+  function renderReplacementDetails(exercise) {
+    var details = document.querySelector("#change-exercise-details");
+
+    if (!details) {
+      return;
+    }
+
+    if (!exercise) {
+      details.textContent = "No same-muscle replacements are currently available.";
+      return;
+    }
+
+    details.textContent = exercise.equipment + " - " + exercise.repRange + " - status: " + exercise.status +
+      " - shoulder: " + formatFriendliness(exercise.shoulderFriendly) +
+      " - lower back: " + formatFriendliness(exercise.lowerBackFriendly);
+  }
+
+  function updateReplacementDetails() {
+    var modal = document.querySelector("#change-exercise-modal");
+    var select = document.querySelector("#change-exercise-select");
+    var session = getActiveSession();
+    var exerciseIndex = modal ? Number(modal.dataset.exerciseIndex) : NaN;
+    var currentExercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+    var selected;
+
+    if (!select || !currentExercise) {
+      return;
+    }
+
+    selected = getReplacementOptions(currentExercise).find(function (exercise) {
+      return exercise.id === select.value;
+    });
+    renderReplacementDetails(selected);
+  }
+
+  function openChangeExerciseModal(exerciseIndex) {
+    var session = getActiveSession();
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+    var modal = document.querySelector("#change-exercise-modal");
+    var current = document.querySelector("#change-exercise-current");
+    var select = document.querySelector("#change-exercise-select");
+    var reason = document.querySelector("#change-exercise-reason");
+    var notes = document.querySelector("#change-exercise-notes");
+    var options;
+
+    if (!exercise || isExerciseLocked(exercise) || !modal || !select) {
+      return;
+    }
+
+    options = getReplacementOptions(exercise);
+    modal.dataset.exerciseIndex = String(exerciseIndex);
+    modal.hidden = false;
+
+    if (current) {
+      current.textContent = "Current: " + exercise.name + " - " + getMuscleLabel(exercise.primaryMuscle);
+    }
+
+    select.innerHTML = options.length
+      ? options.map(function (option) {
+        return '<option value="' + escapeHtml(option.id) + '">' + escapeHtml(option.name) + ' - ' + escapeHtml(option.status) + '</option>';
+      }).join("")
+      : '<option value="">No replacement available</option>';
+    select.disabled = options.length === 0;
+
+    if (reason) {
+      reason.value = "equipment unavailable";
+    }
+
+    if (notes) {
+      notes.value = "";
+    }
+
+    renderReplacementDetails(options[0]);
+    select.focus();
+  }
+
+  function saveExerciseChange() {
+    var session = getActiveSession();
+    var modal = document.querySelector("#change-exercise-modal");
+    var select = document.querySelector("#change-exercise-select");
+    var reason = document.querySelector("#change-exercise-reason");
+    var notes = document.querySelector("#change-exercise-notes");
+    var status = document.querySelector("#workout-save-status");
+    var exerciseIndex = modal ? Number(modal.dataset.exerciseIndex) : NaN;
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+    var state = window.TrainingStorage.getAppState();
+    var replacement = select ? getLibraryExerciseById(state, select.value) : null;
+    var keepLoggedSets = false;
+    var originalExerciseId;
+    var originalExerciseName;
+
+    if (!exercise || !replacement || isExerciseLocked(exercise)) {
+      return;
+    }
+
+    if (hasAnyLoggedSetData(exercise)) {
+      keepLoggedSets = confirm("This exercise already has logged sets. Press OK to keep them for the new exercise. Press Cancel to clear them.");
+
+      if (!keepLoggedSets) {
+        exercise.loggedSets = [];
+      }
+    }
+
+    originalExerciseId = exercise.substitution ? exercise.substitution.originalExerciseId : exercise.exerciseId;
+    originalExerciseName = exercise.substitution ? exercise.substitution.originalExerciseName : exercise.name;
+
+    exercise.exerciseId = replacement.id;
+    exercise.name = replacement.name;
+    exercise.repRange = replacement.repRange;
+    exercise.status = replacement.status;
+    exercise.notes = replacement.notes;
+    exercise.exerciseCompleted = false;
+    exercise.exerciseCompletedAt = null;
+    exercise.substitution = {
+      originalExerciseId: originalExerciseId,
+      originalExerciseName: originalExerciseName,
+      newExerciseId: replacement.id,
+      newExerciseName: replacement.name,
+      reason: reason ? reason.value : "",
+      notes: notes ? notes.value : "",
+      swappedAt: new Date().toISOString()
+    };
+
+    ensureLoggedSets(exercise);
+    window.TrainingStorage.saveActiveSession(session);
+    closeChangeExerciseModal();
+    renderWorkoutLogger();
+    focusExerciseCard(exerciseIndex);
+
+    if (status) {
+      status.textContent = "Exercise changed to " + replacement.name + ".";
+    }
+  }
+
   function optionMarkup(options, selected) {
     return options.map(function (option) {
       var selectedAttribute = option === selected ? " selected" : "";
@@ -676,6 +869,7 @@
     var unskipSetTarget = event.target.dataset ? event.target.dataset.unskipSet : null;
     var completeExerciseTarget = event.target.dataset ? event.target.dataset.completeExercise : null;
     var unlockExerciseTarget = event.target.dataset ? event.target.dataset.unlockExercise : null;
+    var changeExerciseTarget = event.target.dataset ? event.target.dataset.changeExercise : null;
     var parts;
 
     if (saveSetTarget) {
@@ -703,6 +897,10 @@
 
     if (unlockExerciseTarget) {
       unlockExercise(Number(unlockExerciseTarget));
+    }
+
+    if (changeExerciseTarget) {
+      openChangeExerciseModal(Number(changeExerciseTarget));
     }
   }
 
@@ -744,6 +942,9 @@
   function initWorkoutPage() {
     var container = document.querySelector("#workout-exercises");
     var finishButton = document.querySelector("#finish-workout-button");
+    var saveChangeButton = document.querySelector("#save-exercise-change-button");
+    var cancelChangeButton = document.querySelector("#cancel-exercise-change-button");
+    var changeSelect = document.querySelector("#change-exercise-select");
 
     renderWorkoutLogger();
 
@@ -756,6 +957,18 @@
 
     if (finishButton) {
       finishButton.addEventListener("click", renderFeedbackForm);
+    }
+
+    if (saveChangeButton) {
+      saveChangeButton.addEventListener("click", saveExerciseChange);
+    }
+
+    if (cancelChangeButton) {
+      cancelChangeButton.addEventListener("click", closeChangeExerciseModal);
+    }
+
+    if (changeSelect) {
+      changeSelect.addEventListener("change", updateReplacementDetails);
     }
 
     document.addEventListener("visibilitychange", function () {
@@ -775,6 +988,9 @@
     unskipSet: unskipSet,
     completeExercise: completeExercise,
     unlockExercise: unlockExercise,
+    openChangeExerciseModal: openChangeExerciseModal,
+    closeChangeExerciseModal: closeChangeExerciseModal,
+    saveExerciseChange: saveExerciseChange,
     finishWorkout: renderFeedbackForm,
     renderFeedbackForm: renderFeedbackForm,
     collectFeedback: collectFeedback,
