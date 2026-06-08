@@ -33,7 +33,7 @@
     rearDelts: ["rearDelts", "Rear delts"],
     legs: ["legs", "Legs"],
     absWaist: ["absWaist", "Abs / waist"],
-    shoulderPrep: ["shoulderPrep", "Shoulder Prep / Warm-Up"]
+    shoulderPrep: ["shoulderPrep", "Shoulder Prep / Warm-Up", "Warm-up / Activation"]
   };
 
   var muscleLabels = {
@@ -47,7 +47,7 @@
     rearDelts: "Rear Delts",
     legs: "Legs",
     absWaist: "Abs / Waist",
-    shoulderPrep: "Shoulder Prep / Warm-Up"
+    shoulderPrep: "Warm-up / Activation"
   };
 
   var planRules = {

@@ -431,11 +431,18 @@ input[type="checkbox"] {
 .exercise-group {
   display: grid;
   gap: 0.65rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid #222a33;
 }
 
 .exercise-group > h2 {
-  margin: 0.35rem 0 0;
+  margin: 0.2rem 0 0;
+  padding: 0.55rem 0.65rem;
   color: var(--text);
+  background: #080c11;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 1.05rem;
 }
 
 .exercise-card {
@@ -614,10 +621,10 @@ input[type="checkbox"] {
 
 .set-progress {
   display: grid;
-  gap: 0.45rem;
-  padding: 0.65rem;
-  background: #080c11;
-  border: 1px solid var(--border);
+  gap: 0.25rem;
+  padding: 0.35rem 0;
+  background: transparent;
+  border: 0;
   border-radius: var(--radius-sm);
 }
 
@@ -628,7 +635,7 @@ input[type="checkbox"] {
 }
 
 .set-progress-bar {
-  height: 0.55rem;
+  height: 0.28rem;
   overflow: hidden;
   background: #030405;
   border: 1px solid var(--border);
@@ -653,15 +660,22 @@ input[type="checkbox"] {
 
 .workout-set-row.saved {
   color: #c1cad3;
-  background: #070a0d;
-  border-color: #303741;
-  opacity: 0.86;
+  background: #05080b;
+  border-color: #202832;
+  opacity: 0.68;
 }
 
 .workout-set-row.saved input {
-  color: #aeb7c1;
-  background: #090d11;
-  border-color: #222a33;
+  color: #8f9aa5;
+  background: #060a0e;
+  border-color: #18202a;
+}
+
+.workout-set-row.active-set {
+  background: #0d1319;
+  border-color: #3c6682;
+  box-shadow: inset 3px 0 0 var(--primary);
+  opacity: 1;
 }
 
 .workout-set-row.skipped {
@@ -793,10 +807,14 @@ input[type="checkbox"] {
   display: none;
 }
 
+.exercise-modal.modal-open {
+  display: grid !important;
+}
+
 .exercise-modal {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 100;
   display: grid;
   align-items: end;
   padding: 1rem;

@@ -15,7 +15,7 @@
   };
 
   var muscleDisplayLabels = {
-    shoulderPrep: "Shoulder Prep / Warm-Up",
+    shoulderPrep: "Warm-up / Activation",
     sideDelts: "Side Delts",
     upperChest: "Upper Chest",
     chest: "Chest",
@@ -29,7 +29,7 @@
   };
 
   var muscleAliases = {
-    shoulderPrep: ["shoulderPrep", "Shoulder Prep / Warm-Up"],
+    shoulderPrep: ["shoulderPrep", "Shoulder Prep / Warm-Up", "Warm-up / Activation"],
     sideDelts: ["sideDelts", "Side delts"],
     upperChest: ["upperChest", "Upper chest"],
     chest: ["chest", "Chest"],
@@ -1029,7 +1029,7 @@
       return;
     }
 
-    select.innerHTML = '<option value="all">All muscles</option>' + getUniqueMuscles(exercises).map(function (muscle) {
+    select.innerHTML = '<option value="all">All muscle groups</option>' + getUniqueMuscles(exercises).map(function (muscle) {
       return '<option value="' + escapeHtml(muscle) + '">' + escapeHtml(getMuscleLabel(muscle)) + '</option>';
     }).join("");
   }

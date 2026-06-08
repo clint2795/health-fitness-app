@@ -1,4 +1,8 @@
 (function () {
+  var workoutClickBound = false;
+  var lastWorkoutActionAt = 0;
+  var lastWorkoutActionKey = "";
+
   function escapeHtml(value) {
     return String(value)
       .replace(/&/g, "&amp;")
@@ -13,6 +17,12 @@
     }
 
     return muscle;
+  }
+
+  function getClosest(target, selector) {
+    var element = target && target.closest ? target : (target && target.parentElement ? target.parentElement : null);
+
+    return element && element.closest ? element.closest(selector) : null;
   }
 
   function getActiveSession() {
@@ -92,6 +102,14 @@
     ensureLoggedSets(exercise);
 
     return exercise.loggedSets.filter(isSetCompleted).length;
+  }
+
+  function getActiveSetIndex(exercise) {
+    ensureLoggedSets(exercise);
+
+    return exercise.loggedSets.findIndex(function (set) {
+      return !isSetCompleted(set) && !set.skipped;
+    });
   }
 
   function getProgressMarkup(exercise) {
@@ -253,30 +271,34 @@
 
   function createSetInputs(exerciseIndex, exercise) {
     ensureLoggedSets(exercise);
+    var activeSetIndex = getActiveSetIndex(exercise);
 
     return exercise.loggedSets.map(function (set, setIndex) {
       var locked = isExerciseLocked(exercise);
       var savedClass = isSetCompleted(set) ? " saved" : "";
       var skippedClass = set.skipped ? " skipped" : "";
+      var activeClass = !locked && setIndex === activeSetIndex ? " active-set" : "";
       var savedLabel = set.skipped ? "Skipped" : (isSetCompleted(set) ? "Logged" : "Not logged");
       var disabledAttribute = locked ? " disabled" : "";
       var skipButton = set.skipped
         ? '<button class="button set-secondary-button skip-set-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo Skip</button>'
         : '<button class="button set-secondary-button skip-set-button" type="button" data-skip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Skip</button>';
       var removeButton = '<button class="button set-secondary-button remove-set-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Remove</button>';
+      var rirValue = getSetValue(set, "actualRir");
       var summary = isSetCompleted(set)
-        ? '<p class="logged-set-summary">Set ' + (setIndex + 1) + ' - ' + escapeHtml(getSetValue(set, "weightKg") || "0") + 'kg x ' + escapeHtml(getSetValue(set, "reps") || "0") + ' @ ' + escapeHtml(getSetValue(set, "actualRir") || "-") + ' RIR</p>'
+        ? '<p class="logged-set-summary">' + escapeHtml(getSetValue(set, "weightKg") || "0") + 'kg x ' + escapeHtml(getSetValue(set, "reps") || "0") + (rirValue ? ' @ ' + escapeHtml(rirValue) + ' RIR' : '') + '</p>'
         : "";
+      var logButtonText = isSetCompleted(set) ? "Update" : "Log Set";
 
       return (
-        '<div class="workout-set-row' + savedClass + skippedClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
+        '<div class="workout-set-row' + savedClass + skippedClass + activeClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
           '<div class="set-row-header"><strong>Set ' + (setIndex + 1) + ' of ' + exercise.loggedSets.length + '</strong><span class="saved-label">' + savedLabel + '</span></div>' +
           summary +
           '<label>Weight<input type="number" inputmode="decimal" data-field="weightKg" value="' + escapeHtml(getSetValue(set, "weightKg")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Reps<input type="number" inputmode="numeric" data-field="reps" value="' + escapeHtml(getSetValue(set, "reps")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Actual RIR<input type="number" inputmode="numeric" data-field="actualRir" value="' + escapeHtml(getSetValue(set, "actualRir")) + '" placeholder="' + escapeHtml(exercise.targetRir || "") + '"' + disabledAttribute + '></label>' +
           '<div class="set-button-row">' +
-            '<button class="button button-primary save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Log Set</button>' +
+            '<button class="button button-primary save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>' + logButtonText + '</button>' +
             '<div class="set-secondary-actions">' + skipButton + removeButton + '</div>' +
           '</div>' +
         '</div>'
@@ -374,7 +396,6 @@
               '<span class="badge">' + getCompletedSetCount(exercise) + ' / ' + escapeHtml(exercise.loggedSets.length) + ' logged</span>' +
             '</div>' +
           '</div>' +
-          getProgressMarkup(exercise) +
           getSubstitutionMarkup(exercise) +
           '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' +
           createSetInputs(index, exercise) +
@@ -752,6 +773,13 @@
 
     if (modal) {
       modal.hidden = true;
+      if (modal.setAttribute) {
+        modal.setAttribute("hidden", "");
+      }
+      if (modal.classList) {
+        modal.classList.remove("modal-open");
+      }
+      modal.style.display = "";
       modal.dataset.exerciseIndex = "";
     }
   }
@@ -770,6 +798,13 @@
 
     modal.dataset.exerciseIndex = String(exerciseIndex);
     modal.hidden = false;
+    if (modal.removeAttribute) {
+      modal.removeAttribute("hidden");
+    }
+    if (modal.classList) {
+      modal.classList.add("modal-open");
+    }
+    modal.style.display = "grid";
 
     if (current) {
       current.textContent = "Skip: " + exercise.name;
@@ -848,6 +883,13 @@
 
     if (modal) {
       modal.hidden = true;
+      if (modal.setAttribute) {
+        modal.setAttribute("hidden", "");
+      }
+      if (modal.classList) {
+        modal.classList.remove("modal-open");
+      }
+      modal.style.display = "";
       modal.dataset.exerciseIndex = "";
     }
   }
@@ -904,9 +946,21 @@
       return;
     }
 
+    var status = document.querySelector("#workout-save-status");
+    if (status) {
+      status.textContent = "Change tapped.";
+    }
+
     options = getReplacementOptions(exercise);
     modal.dataset.exerciseIndex = String(exerciseIndex);
     modal.hidden = false;
+    if (modal.removeAttribute) {
+      modal.removeAttribute("hidden");
+    }
+    if (modal.classList) {
+      modal.classList.add("modal-open");
+    }
+    modal.style.display = "grid";
 
     if (current) {
       current.textContent = "Current: " + exercise.name + " - " + getMuscleLabel(exercise.primaryMuscle);
@@ -1114,17 +1168,22 @@
 
   function handleWorkoutClick(event) {
     var target = event.target;
-    var saveSetButton = target.closest ? target.closest("[data-save-set]") : null;
-    var addSetButton = target.closest ? target.closest("[data-add-set]") : null;
-    var removeSetButton = target.closest ? target.closest("[data-remove-set]") : null;
-    var skipSetButton = target.closest ? target.closest("[data-skip-set]") : null;
-    var unskipSetButton = target.closest ? target.closest("[data-unskip-set]") : null;
-    var skipExerciseButton = target.closest ? target.closest("[data-skip-exercise]") : null;
-    var unskipExerciseButton = target.closest ? target.closest("[data-unskip-exercise]") : null;
-    var completeExerciseButton = target.closest ? target.closest("[data-complete-exercise]") : null;
-    var unlockExerciseButton = target.closest ? target.closest("[data-unlock-exercise]") : null;
-    var changeExerciseButton = target.closest ? target.closest("[data-change-exercise]") : null;
+    var workoutRoot = getClosest(target, "#workout-exercises");
+    var saveSetButton = getClosest(target, "[data-save-set]");
+    var addSetButton = getClosest(target, "[data-add-set]");
+    var removeSetButton = getClosest(target, "[data-remove-set]");
+    var skipSetButton = getClosest(target, "[data-skip-set]");
+    var unskipSetButton = getClosest(target, "[data-unskip-set]");
+    var skipExerciseButton = getClosest(target, "[data-skip-exercise]");
+    var unskipExerciseButton = getClosest(target, "[data-unskip-exercise]");
+    var completeExerciseButton = getClosest(target, "[data-complete-exercise]");
+    var unlockExerciseButton = getClosest(target, "[data-unlock-exercise]");
+    var changeExerciseButton = getClosest(target, "[data-change-exercise]");
     var parts;
+
+    if (!workoutRoot) {
+      return;
+    }
 
     if (saveSetButton) {
       parts = saveSetButton.dataset.saveSet.split(":");
@@ -1169,6 +1228,48 @@
     if (changeExerciseButton) {
       openChangeExerciseModal(Number(changeExerciseButton.dataset.changeExercise));
     }
+  }
+
+  function getWorkoutActionKey(target) {
+    var selectors = [
+      "saveSet",
+      "addSet",
+      "removeSet",
+      "skipSet",
+      "unskipSet",
+      "skipExercise",
+      "unskipExercise",
+      "completeExercise",
+      "unlockExercise",
+      "changeExercise"
+    ];
+    var index;
+    var button;
+
+    for (index = 0; index < selectors.length; index += 1) {
+      button = getClosest(target, "[data-" + selectors[index].replace(/[A-Z]/g, function (letter) {
+        return "-" + letter.toLowerCase();
+      }) + "]");
+
+      if (button) {
+        return selectors[index] + ":" + button.dataset[selectors[index]];
+      }
+    }
+
+    return "";
+  }
+
+  function handleWorkoutActionEvent(event) {
+    var now = Date.now();
+    var actionKey = getWorkoutActionKey(event.target);
+
+    if (actionKey && actionKey === lastWorkoutActionKey && now - lastWorkoutActionAt < 350) {
+      return;
+    }
+
+    lastWorkoutActionAt = now;
+    lastWorkoutActionKey = actionKey;
+    handleWorkoutClick(event);
   }
 
   function handleWorkoutInput(event) {
@@ -1218,10 +1319,16 @@
     renderWorkoutLogger();
 
     if (container) {
-      container.addEventListener("click", handleWorkoutClick);
       container.addEventListener("input", handleWorkoutInput);
       container.addEventListener("change", handleWorkoutInput);
       container.addEventListener("keydown", handleWorkoutKeydown);
+    }
+
+    if (!workoutClickBound) {
+      document.addEventListener("click", handleWorkoutActionEvent);
+      document.addEventListener("touchend", handleWorkoutActionEvent);
+      document.addEventListener("pointerup", handleWorkoutActionEvent);
+      workoutClickBound = true;
     }
 
     if (finishButton) {
