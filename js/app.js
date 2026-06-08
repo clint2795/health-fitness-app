@@ -57,6 +57,7 @@
   ];
 
   var exerciseGroupOrder = exercisePreferenceCategories.slice();
+  var todaySessionDraft = null;
 
   function escapeHtml(value) {
     return String(value)
@@ -97,7 +98,7 @@
     }
 
     var state = window.TrainingStorage.getAppState();
-    var session = window.TrainingLogic.generateTodaySession(state);
+    var session = todaySessionDraft || window.TrainingLogic.generateTodaySession(state);
     var warnings = window.TrainingLogic.getRecoveryWarnings();
     var title = document.querySelector("#today-session-title");
     var week = document.querySelector("#today-week");
@@ -146,7 +147,10 @@
       sessionReason.textContent = session.why || "Session selected from remaining weekly set targets and recent training history.";
     }
     if (generateButton) {
-      generateButton.onclick = renderHomePage;
+      generateButton.onclick = function () {
+        todaySessionDraft = null;
+        renderHomePage();
+      };
     }
     if (startButton) {
       startButton.onclick = function () {
@@ -154,6 +158,7 @@
         window.location.href = "workout.html";
       };
     }
+    bindTodayAdjustmentControls(session);
     renderDebugPanel(state, session);
   }
 
@@ -162,9 +167,10 @@
       return '<p class="subtle">None planned.</p>';
     }
 
-    return items.map(function (item) {
+    return items.map(function (item, index) {
       var setLabel = type === "prep" ? item.plannedSets + " prep sets" : item.plannedSets + " working sets";
       var rir = item.targetRir ? " - " + escapeHtml(item.targetRir) : "";
+      var controls = type === "exercise" ? renderTodayExerciseControls(index) : "";
 
       return (
         '<article class="plan-card">' +
@@ -177,9 +183,110 @@
           '</div>' +
           '<p>' + escapeHtml(item.repRange) + rir + '</p>' +
           '<p class="subtle">' + escapeHtml(item.notes) + '</p>' +
+          controls +
         '</article>'
       );
     }).join("");
+  }
+
+  function renderTodayExerciseControls(index) {
+    return (
+      '<div class="today-adjust-row">' +
+        '<button class="button compact-button" type="button" data-today-change-exercise="' + index + '">Change Exercise</button>' +
+        '<button class="button compact-button" type="button" data-today-reduce-set="' + index + '">-1 Set</button>' +
+        '<button class="button compact-button" type="button" data-today-add-set="' + index + '">+1 Set</button>' +
+        '<button class="button compact-button danger-button" type="button" data-today-remove-exercise="' + index + '">Remove</button>' +
+      '</div>'
+    );
+  }
+
+  function setTodayDraft(session) {
+    todaySessionDraft = JSON.parse(JSON.stringify(session));
+    return todaySessionDraft;
+  }
+
+  function updateTodayExerciseToLibraryItem(sessionExercise, libraryExercise) {
+    sessionExercise.exerciseId = libraryExercise.id;
+    sessionExercise.name = libraryExercise.name;
+    sessionExercise.repRange = libraryExercise.repRange;
+    sessionExercise.status = libraryExercise.status;
+    sessionExercise.notes = libraryExercise.notes;
+    sessionExercise.loggedSets = [];
+  }
+
+  function changeTodayExercise(session, exerciseIndex) {
+    var state = window.TrainingStorage.getAppState();
+    var exercise = session.exercises[exerciseIndex];
+    var muscle;
+    var candidates;
+    var currentIndex;
+    var replacement;
+
+    if (!exercise) {
+      return;
+    }
+
+    muscle = normalizeMuscle(exercise.primaryMuscle);
+    candidates = window.TrainingLogic && window.TrainingLogic.getCandidateExercises
+      ? window.TrainingLogic.getCandidateExercises(state, muscle)
+      : [];
+    currentIndex = candidates.findIndex(function (candidate) {
+      return candidate.id === exercise.exerciseId;
+    });
+
+    if (candidates.length < 2) {
+      return;
+    }
+
+    replacement = candidates[(currentIndex + 1 + candidates.length) % candidates.length];
+
+    if (replacement.id === exercise.exerciseId) {
+      replacement = candidates.find(function (candidate) {
+        return candidate.id !== exercise.exerciseId;
+      });
+    }
+
+    if (replacement) {
+      updateTodayExerciseToLibraryItem(exercise, replacement);
+    }
+  }
+
+  function bindTodayAdjustmentControls(session) {
+    var container = document.querySelector("#today-exercises");
+
+    if (!container) {
+      return;
+    }
+
+    container.querySelectorAll("[data-today-change-exercise], [data-today-reduce-set], [data-today-add-set], [data-today-remove-exercise]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var draft = setTodayDraft(session);
+        var index = Number(button.dataset.todayChangeExercise || button.dataset.todayReduceSet || button.dataset.todayAddSet || button.dataset.todayRemoveExercise);
+        var exercise = draft.exercises[index];
+
+        if (!exercise) {
+          return;
+        }
+
+        if (button.dataset.todayChangeExercise) {
+          changeTodayExercise(draft, index);
+        }
+
+        if (button.dataset.todayReduceSet) {
+          exercise.plannedSets = Math.max(1, Number(exercise.plannedSets) - 1);
+        }
+
+        if (button.dataset.todayAddSet) {
+          exercise.plannedSets = Math.min(8, Number(exercise.plannedSets) + 1);
+        }
+
+        if (button.dataset.todayRemoveExercise && confirm("Remove this exercise from today's draft session?")) {
+          draft.exercises.splice(index, 1);
+        }
+
+        renderHomePage();
+      });
+    });
   }
 
   function getActiveSetupSummary(state) {
@@ -1185,6 +1292,7 @@
     getUniqueMuscles: getUniqueMuscles,
     renderExercisesPage: renderExercisesPage,
     renderExerciseLibrary: renderExerciseLibrary,
+    renderHomePage: renderHomePage,
     renderSetupPage: renderSetupPage,
     setExerciseAsPreferred: setExerciseAsPreferred,
     applyGoalPreset: applyGoalPreset,

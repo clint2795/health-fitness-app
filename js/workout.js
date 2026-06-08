@@ -93,7 +93,7 @@
       return set.skipped;
     }).length;
     var percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-    var text = completed + " / " + total + " sets saved";
+    var text = completed + " / " + total + " sets logged";
 
     if (skipped > 0) {
       text += " - " + skipped + " skipped";
@@ -191,7 +191,7 @@
       var locked = isExerciseLocked(exercise);
       var savedClass = isSetCompleted(set) ? " saved" : "";
       var skippedClass = set.skipped ? " skipped" : "";
-      var savedLabel = set.skipped ? "Skipped" : (isSetCompleted(set) ? "Saved" : "Unsaved");
+      var savedLabel = set.skipped ? "Skipped" : (isSetCompleted(set) ? "Logged" : "Not logged");
       var disabledAttribute = locked ? " disabled" : "";
       var skipButton = set.skipped
         ? '<button class="button skip-set-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo Skip</button>'
@@ -204,7 +204,7 @@
           '<label>Reps<input type="number" inputmode="numeric" data-field="reps" value="' + escapeHtml(getSetValue(set, "reps")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Actual RIR<input type="number" inputmode="numeric" data-field="actualRir" value="' + escapeHtml(getSetValue(set, "actualRir")) + '" placeholder="' + escapeHtml(exercise.targetRir || "") + '"' + disabledAttribute + '></label>' +
           '<div class="set-button-row">' +
-            '<button class="button save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Save Set</button>' +
+            '<button class="button save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Log Set</button>' +
             skipButton +
           '</div>' +
         '</div>'
@@ -224,7 +224,6 @@
 
     return (
       '<div class="exercise-actions" data-exercise-actions="' + exerciseIndex + '">' +
-        '<button class="button" type="button" data-change-exercise="' + exerciseIndex + '">Change Exercise</button>' +
         '<button class="button add-set-button" type="button" data-add-set="' + exerciseIndex + '">Add Set</button>' +
         '<button class="button button-primary complete-exercise-button" type="button" data-complete-exercise="' + exerciseIndex + '">Complete This Exercise</button>' +
       '</div>'
@@ -255,12 +254,15 @@
 
       return (
         '<article class="card workout-exercise-card' + lockedClass + '" data-exercise-card="' + index + '">' +
-          '<div class="card-header">' +
+          '<div class="card-header workout-card-header">' +
             '<div>' +
               '<h2>' + escapeHtml(exercise.name) + '</h2>' +
               '<p class="subtle">' + escapeHtml(getMuscleLabel(exercise.primaryMuscle)) + ' - ' + escapeHtml(exercise.repRange) + ' - ' + escapeHtml(exercise.targetRir) + '</p>' +
             '</div>' +
-            '<span class="badge">' + getCompletedSetCount(exercise) + ' / ' + escapeHtml(exercise.loggedSets.length) + ' saved</span>' +
+            '<div class="workout-header-actions">' +
+              (!isExerciseLocked(exercise) ? '<button class="button change-exercise-top-button" type="button" data-change-exercise="' + index + '">Change</button>' : '') +
+              '<span class="badge">' + getCompletedSetCount(exercise) + ' / ' + escapeHtml(exercise.loggedSets.length) + ' logged</span>' +
+            '</div>' +
           '</div>' +
           getProgressMarkup(exercise) +
           getSubstitutionMarkup(exercise) +
@@ -320,14 +322,14 @@
     total = exercise.loggedSets.length;
 
     if (badge) {
-      badge.textContent = completed + " / " + total + " saved";
+      badge.textContent = completed + " / " + total + " logged";
     }
 
     if (progressText) {
       var skipped = exercise.loggedSets.filter(function (set) {
         return set.skipped;
       }).length;
-      progressText.textContent = completed + " / " + total + " sets saved" + (skipped > 0 ? " - " + skipped + " skipped" : "");
+      progressText.textContent = completed + " / " + total + " sets logged" + (skipped > 0 ? " - " + skipped + " skipped" : "");
     }
 
     if (progressBar) {
@@ -351,7 +353,7 @@
     }
 
     if (label) {
-      label.textContent = "Saved";
+      label.textContent = "Logged";
     }
   }
 
@@ -383,7 +385,7 @@
     updateProgressDisplay(exerciseIndex);
 
     if (status) {
-      status.textContent = "Set saved.";
+      status.textContent = "Set logged.";
     }
 
     if (shouldAdvance !== false) {
