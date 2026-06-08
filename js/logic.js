@@ -339,6 +339,10 @@
   }
 
   function countExerciseSets(exercise) {
+    if (exercise.exerciseSkipped) {
+      return 0;
+    }
+
     if (Array.isArray(exercise.loggedSets)) {
       var logged = exercise.loggedSets.filter(function (set) {
         return set && !set.skipped && (set.completed || set.saved || set.weightKg || set.weight || set.reps || set.actualRir);

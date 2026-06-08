@@ -159,6 +159,7 @@
       };
     }
     bindTodayAdjustmentControls(session);
+    bindTodayChangeExerciseModal();
     renderDebugPanel(state, session);
   }
 
@@ -214,40 +215,136 @@
     sessionExercise.loggedSets = [];
   }
 
-  function changeTodayExercise(session, exerciseIndex) {
+  function statusRank(status) {
+    if (status === "preferred") return 1;
+    if (status === "neutral") return 2;
+    if (status === "conditional") return 3;
+    if (status === "prep") return 4;
+    if (status === "avoid") return 5;
+    return 6;
+  }
+
+  function getTodayReplacementOptions(sessionExercise) {
     var state = window.TrainingStorage.getAppState();
-    var exercise = session.exercises[exerciseIndex];
-    var muscle;
-    var candidates;
-    var currentIndex;
-    var replacement;
+    var muscle = normalizeMuscle(sessionExercise.primaryMuscle);
+
+    return (state.exerciseLibrary || []).filter(function (exercise) {
+      return normalizeMuscle(exercise.primaryMuscle) === muscle && exercise.status !== "prep" && exercise.id !== sessionExercise.exerciseId;
+    }).sort(function (a, b) {
+      var aRisk = getExerciseRiskReasons(a, state).length;
+      var bRisk = getExerciseRiskReasons(b, state).length;
+
+      return aRisk - bRisk || statusRank(a.status) - statusRank(b.status) || a.name.localeCompare(b.name);
+    });
+  }
+
+  function renderTodayReplacementDetails(exercise) {
+    var details = document.querySelector("#today-change-exercise-details");
+    var riskReasons = exercise ? getExerciseRiskReasons(exercise, window.TrainingStorage.getAppState()) : [];
+
+    if (!details) {
+      return;
+    }
 
     if (!exercise) {
+      details.textContent = "No same-muscle replacements are available.";
       return;
     }
 
-    muscle = normalizeMuscle(exercise.primaryMuscle);
-    candidates = window.TrainingLogic && window.TrainingLogic.getCandidateExercises
-      ? window.TrainingLogic.getCandidateExercises(state, muscle)
-      : [];
-    currentIndex = candidates.findIndex(function (candidate) {
-      return candidate.id === exercise.exerciseId;
-    });
+    details.textContent = exercise.equipment + " - " + exercise.repRange + " - status: " + exercise.status +
+      " - shoulder: " + formatFriendliness(exercise.shoulderFriendly) +
+      " - lower back: " + formatFriendliness(exercise.lowerBackFriendly) +
+      (riskReasons.length ? " - warning: " + riskReasons.join(", ") : "");
+  }
 
-    if (candidates.length < 2) {
+  function openTodayChangeExerciseModal(session, exerciseIndex) {
+    var draft = setTodayDraft(session);
+    var exercise = draft.exercises[exerciseIndex];
+    var modal = document.querySelector("#today-change-exercise-modal");
+    var current = document.querySelector("#today-change-exercise-current");
+    var select = document.querySelector("#today-change-exercise-select");
+    var options;
+
+    if (!exercise || !modal || !select) {
       return;
     }
 
-    replacement = candidates[(currentIndex + 1 + candidates.length) % candidates.length];
+    options = getTodayReplacementOptions(exercise);
+    modal.dataset.exerciseIndex = String(exerciseIndex);
+    modal.hidden = false;
 
-    if (replacement.id === exercise.exerciseId) {
-      replacement = candidates.find(function (candidate) {
-        return candidate.id !== exercise.exerciseId;
-      });
+    if (current) {
+      current.textContent = "Current: " + exercise.name + " - " + getMuscleLabel(exercise.primaryMuscle);
     }
 
-    if (replacement) {
-      updateTodayExerciseToLibraryItem(exercise, replacement);
+    select.innerHTML = options.length
+      ? options.map(function (option) {
+        var riskReasons = getExerciseRiskReasons(option, window.TrainingStorage.getAppState());
+        var riskLabel = riskReasons.length ? " - warning" : "";
+
+        return '<option value="' + escapeHtml(option.id) + '">' + escapeHtml(option.name) + ' - ' + escapeHtml(option.status) + riskLabel + '</option>';
+      }).join("")
+      : '<option value="">No replacement available</option>';
+    select.disabled = options.length === 0;
+    renderTodayReplacementDetails(options[0]);
+    select.focus();
+  }
+
+  function closeTodayChangeExerciseModal() {
+    var modal = document.querySelector("#today-change-exercise-modal");
+
+    if (modal) {
+      modal.hidden = true;
+      modal.dataset.exerciseIndex = "";
+    }
+  }
+
+  function saveTodayExerciseChange() {
+    var modal = document.querySelector("#today-change-exercise-modal");
+    var select = document.querySelector("#today-change-exercise-select");
+    var state = window.TrainingStorage.getAppState();
+    var exerciseIndex = modal ? Number(modal.dataset.exerciseIndex) : NaN;
+    var exercise = todaySessionDraft && todaySessionDraft.exercises ? todaySessionDraft.exercises[exerciseIndex] : null;
+    var replacement = select ? (state.exerciseLibrary || []).find(function (item) {
+      return item.id === select.value;
+    }) : null;
+    var riskReasons = replacement ? getExerciseRiskReasons(replacement, state) : [];
+
+    if (!exercise || !replacement) {
+      return;
+    }
+
+    if (riskReasons.length && !confirm("This exercise is flagged for the current injury settings: " + riskReasons.join(", ") + ". Use it anyway?")) {
+      return;
+    }
+
+    updateTodayExerciseToLibraryItem(exercise, replacement);
+    closeTodayChangeExerciseModal();
+    renderHomePage();
+  }
+
+  function bindTodayChangeExerciseModal() {
+    var saveButton = document.querySelector("#today-save-exercise-change-button");
+    var cancelButton = document.querySelector("#today-cancel-exercise-change-button");
+    var select = document.querySelector("#today-change-exercise-select");
+
+    if (saveButton) {
+      saveButton.onclick = saveTodayExerciseChange;
+    }
+
+    if (cancelButton) {
+      cancelButton.onclick = closeTodayChangeExerciseModal;
+    }
+
+    if (select) {
+      select.onchange = function () {
+        var state = window.TrainingStorage.getAppState();
+        var selected = (state.exerciseLibrary || []).find(function (exercise) {
+          return exercise.id === select.value;
+        });
+
+        renderTodayReplacementDetails(selected);
+      };
     }
   }
 
@@ -269,7 +366,8 @@
         }
 
         if (button.dataset.todayChangeExercise) {
-          changeTodayExercise(draft, index);
+          openTodayChangeExerciseModal(draft, index);
+          return;
         }
 
         if (button.dataset.todayReduceSet) {
@@ -1227,6 +1325,10 @@
   }
 
   function countLoggedSets(exercise) {
+    if (exercise.exerciseSkipped) {
+      return 0;
+    }
+
     if (!Array.isArray(exercise.loggedSets)) {
       return Number(exercise.plannedSets) || 0;
     }
@@ -1237,6 +1339,10 @@
   }
 
   function getHistoryExerciseLabel(exercise) {
+    if (exercise.exerciseSkipped) {
+      return exercise.name + " (skipped)";
+    }
+
     if (!exercise.substitution) {
       return exercise.name;
     }
@@ -1248,6 +1354,11 @@
     var loggedCount = countLoggedSets(exercise);
     var setCount = loggedCount || 0;
     var summary = escapeHtml(exercise.name) + ": " + escapeHtml(setCount) + " sets";
+
+    if (exercise.exerciseSkipped) {
+      summary += '<br><span class="subtle">Skipped: ' + escapeHtml(exercise.exerciseSkipReason || "No reason recorded") + '</span>';
+      return summary;
+    }
 
     if (exercise.substitution) {
       summary += '<br><span class="subtle">Originally planned: ' + escapeHtml(exercise.substitution.originalExerciseName) + '</span>';
@@ -1266,6 +1377,10 @@
         var muscle = exercise.primaryMuscle;
         var loggedCount = countLoggedSets(exercise);
         var setCount = loggedCount || 0;
+
+        if (setCount <= 0) {
+          return;
+        }
 
         totals[muscle] = (totals[muscle] || 0) + setCount;
       });

@@ -562,8 +562,14 @@ input[type="checkbox"] {
 }
 
 .workout-exercise-card.completed-exercise {
-  border-color: #356f50;
-  background: linear-gradient(180deg, #0c1511, var(--surface));
+  border-color: #343b45;
+  background: linear-gradient(180deg, #0a0d11, #090c10);
+  opacity: 0.88;
+}
+
+.workout-exercise-card.skipped-exercise {
+  border-color: #5f4b25;
+  background: linear-gradient(180deg, #11100d, #090c10);
 }
 
 .workout-exercise-card h2 {
@@ -629,13 +635,23 @@ input[type="checkbox"] {
 }
 
 .workout-set-row.saved {
-  background: #0b1712;
-  border-color: #2f865d;
+  color: #c1cad3;
+  background: #070a0d;
+  border-color: #303741;
+  opacity: 0.86;
 }
 
 .workout-set-row.skipped {
-  background: #15120d;
-  border-color: #6a5125;
+  color: #d0c5b0;
+  background: #100f0c;
+  border-color: #5f4b25;
+  opacity: 0.88;
+}
+
+.workout-set-row:focus-within {
+  background: #0d1319;
+  border-color: #4b83a8;
+  opacity: 1;
 }
 
 .set-row-header {
@@ -662,9 +678,9 @@ input[type="checkbox"] {
 }
 
 .workout-set-row.saved .saved-label {
-  color: #d8f0e1;
-  background: var(--success-soft);
-  border-color: #356f50;
+  color: #c1cad3;
+  background: #10151b;
+  border-color: #303741;
 }
 
 .workout-set-row.skipped .saved-label {
@@ -688,7 +704,7 @@ input[type="checkbox"] {
 .set-button-row {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
 }
 
@@ -743,15 +759,20 @@ input[type="checkbox"] {
 
 .exercise-actions.completed {
   padding: 0.7rem;
-  background: #0b1712;
-  border: 1px solid #356f50;
+  background: #090d11;
+  border: 1px solid #303741;
   border-radius: var(--radius-sm);
 }
 
 .exercise-complete-label {
   margin-bottom: 0;
-  color: #d8f0e1;
+  color: #c1cad3;
   font-weight: 850;
+}
+
+.skipped-exercise-actions {
+  background: #100f0c;
+  border-color: #5f4b25;
 }
 
 .feedback-section[hidden] {
