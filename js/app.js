@@ -677,11 +677,11 @@
 
   function countLoggedSets(exercise) {
     if (!Array.isArray(exercise.loggedSets)) {
-      return 0;
+      return Number(exercise.plannedSets) || 0;
     }
 
     return exercise.loggedSets.filter(function (set) {
-      return set && (set.weightKg || set.weight || set.reps || set.actualRir);
+      return set && !set.skipped && (set.completed || set.saved || set.weightKg || set.weight || set.reps || set.actualRir);
     }).length;
   }
 
@@ -690,7 +690,7 @@
       (session.exercises || []).forEach(function (exercise) {
         var muscle = exercise.primaryMuscle;
         var loggedCount = countLoggedSets(exercise);
-        var setCount = loggedCount || exercise.plannedSets || 0;
+        var setCount = loggedCount || 0;
 
         totals[muscle] = (totals[muscle] || 0) + setCount;
       });
@@ -708,7 +708,7 @@
     }).join(", ");
     var loggedSummary = (session.exercises || []).map(function (exercise) {
       var loggedCount = countLoggedSets(exercise);
-      var setCount = loggedCount || exercise.plannedSets || 0;
+      var setCount = loggedCount || 0;
 
       return escapeHtml(exercise.name) + ": " + escapeHtml(setCount) + " sets";
     }).join("<br>");

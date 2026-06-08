@@ -298,12 +298,14 @@
   function countExerciseSets(exercise) {
     if (Array.isArray(exercise.loggedSets)) {
       var logged = exercise.loggedSets.filter(function (set) {
-        return set && (set.weightKg || set.weight || set.reps || set.actualRir);
+        return set && !set.skipped && (set.completed || set.saved || set.weightKg || set.weight || set.reps || set.actualRir);
       }).length;
 
       if (logged > 0) {
         return logged;
       }
+
+      return 0;
     }
 
     return Number(exercise.plannedSets) || 0;

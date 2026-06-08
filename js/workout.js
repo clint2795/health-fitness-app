@@ -46,7 +46,11 @@
   }
 
   function isSetCompleted(set) {
-    return Boolean(set && (set.completed || set.saved));
+    return Boolean(set && !set.skipped && (set.completed || set.saved));
+  }
+
+  function isExerciseLocked(exercise) {
+    return Boolean(exercise && exercise.exerciseCompleted);
   }
 
   function ensureLoggedSets(exercise) {
@@ -68,7 +72,9 @@
         weightKg: getSetValue(set, "weightKg"),
         reps: getSetValue(set, "reps"),
         actualRir: getSetValue(set, "actualRir"),
-        completed: Boolean(set.completed || set.saved),
+        completed: Boolean(!set.skipped && (set.completed || set.saved)),
+        skipped: Boolean(set.skipped),
+        skippedAt: set.skippedAt || null,
         updatedAt: set.updatedAt || set.savedAt || null
       };
     });
@@ -83,11 +89,19 @@
   function getProgressMarkup(exercise) {
     var completed = getCompletedSetCount(exercise);
     var total = exercise.loggedSets.length;
+    var skipped = exercise.loggedSets.filter(function (set) {
+      return set.skipped;
+    }).length;
     var percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    var text = completed + " / " + total + " sets saved";
+
+    if (skipped > 0) {
+      text += " - " + skipped + " skipped";
+    }
 
     return (
       '<div class="set-progress" data-progress-for="' + escapeHtml(exercise.exerciseId) + '">' +
-        '<div class="set-progress-text">' + completed + ' / ' + total + ' sets saved</div>' +
+        '<div class="set-progress-text">' + text + '</div>' +
         '<div class="set-progress-bar" aria-hidden="true"><span style="width: ' + percent + '%"></span></div>' +
       '</div>'
     );
@@ -126,19 +140,46 @@
     ensureLoggedSets(exercise);
 
     return exercise.loggedSets.map(function (set, setIndex) {
+      var locked = isExerciseLocked(exercise);
       var savedClass = isSetCompleted(set) ? " saved" : "";
-      var savedLabel = isSetCompleted(set) ? "Saved" : "Unsaved";
+      var skippedClass = set.skipped ? " skipped" : "";
+      var savedLabel = set.skipped ? "Skipped" : (isSetCompleted(set) ? "Saved" : "Unsaved");
+      var disabledAttribute = locked ? " disabled" : "";
+      var skipButton = set.skipped
+        ? '<button class="button skip-set-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo Skip</button>'
+        : '<button class="button skip-set-button" type="button" data-skip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Skip Set</button>';
 
       return (
-        '<div class="workout-set-row' + savedClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
+        '<div class="workout-set-row' + savedClass + skippedClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
           '<div class="set-row-header"><strong>Set ' + (setIndex + 1) + ' of ' + exercise.loggedSets.length + '</strong><span class="saved-label">' + savedLabel + '</span></div>' +
-          '<label>Weight<input type="number" inputmode="decimal" data-field="weightKg" value="' + escapeHtml(getSetValue(set, "weightKg")) + '" placeholder="0"></label>' +
-          '<label>Reps<input type="number" inputmode="numeric" data-field="reps" value="' + escapeHtml(getSetValue(set, "reps")) + '" placeholder="0"></label>' +
-          '<label>Actual RIR<input type="number" inputmode="numeric" data-field="actualRir" value="' + escapeHtml(getSetValue(set, "actualRir")) + '" placeholder="' + escapeHtml(exercise.targetRir || "") + '"></label>' +
-          '<button class="button save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '">Save Set</button>' +
+          '<label>Weight<input type="number" inputmode="decimal" data-field="weightKg" value="' + escapeHtml(getSetValue(set, "weightKg")) + '" placeholder="0"' + disabledAttribute + '></label>' +
+          '<label>Reps<input type="number" inputmode="numeric" data-field="reps" value="' + escapeHtml(getSetValue(set, "reps")) + '" placeholder="0"' + disabledAttribute + '></label>' +
+          '<label>Actual RIR<input type="number" inputmode="numeric" data-field="actualRir" value="' + escapeHtml(getSetValue(set, "actualRir")) + '" placeholder="' + escapeHtml(exercise.targetRir || "") + '"' + disabledAttribute + '></label>' +
+          '<div class="set-button-row">' +
+            '<button class="button save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Save Set</button>' +
+            skipButton +
+          '</div>' +
         '</div>'
       );
     }).join("");
+  }
+
+  function getExerciseActionsMarkup(exerciseIndex, exercise) {
+    if (isExerciseLocked(exercise)) {
+      return (
+        '<div class="exercise-actions completed" data-exercise-actions="' + exerciseIndex + '">' +
+          '<p class="exercise-complete-label">Exercise complete</p>' +
+          '<button class="button" type="button" data-unlock-exercise="' + exerciseIndex + '">Edit / Unlock</button>' +
+        '</div>'
+      );
+    }
+
+    return (
+      '<div class="exercise-actions" data-exercise-actions="' + exerciseIndex + '">' +
+        '<button class="button add-set-button" type="button" data-add-set="' + exerciseIndex + '">Add Set</button>' +
+        '<button class="button button-primary complete-exercise-button" type="button" data-complete-exercise="' + exerciseIndex + '">Complete This Exercise</button>' +
+      '</div>'
+    );
   }
 
   function renderWorkoutLogger() {
@@ -161,8 +202,10 @@
     renderPrep(session);
 
     container.innerHTML = session.exercises.map(function (exercise, index) {
+      var lockedClass = isExerciseLocked(exercise) ? " completed-exercise" : "";
+
       return (
-        '<article class="card workout-exercise-card" data-exercise-card="' + index + '">' +
+        '<article class="card workout-exercise-card' + lockedClass + '" data-exercise-card="' + index + '">' +
           '<div class="card-header">' +
             '<div>' +
               '<h2>' + escapeHtml(exercise.name) + '</h2>' +
@@ -173,7 +216,7 @@
           getProgressMarkup(exercise) +
           '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' +
           createSetInputs(index, exercise) +
-          '<button class="button add-set-button" type="button" data-add-set="' + index + '">Add Set</button>' +
+          getExerciseActionsMarkup(index, exercise) +
         '</article>'
       );
     }).join("");
@@ -201,6 +244,8 @@
       reps: row.querySelector('[data-field="reps"]').value,
       actualRir: row.querySelector('[data-field="actualRir"]').value,
       completed: completed === true ? true : Boolean(existingSet.completed),
+      skipped: completed === true ? false : Boolean(existingSet.skipped),
+      skippedAt: completed === true ? null : existingSet.skippedAt || null,
       updatedAt: new Date().toISOString()
     };
 
@@ -229,7 +274,10 @@
     }
 
     if (progressText) {
-      progressText.textContent = completed + " / " + total + " sets saved";
+      var skipped = exercise.loggedSets.filter(function (set) {
+        return set.skipped;
+      }).length;
+      progressText.textContent = completed + " / " + total + " sets saved" + (skipped > 0 ? " - " + skipped + " skipped" : "");
     }
 
     if (progressBar) {
@@ -247,6 +295,9 @@
 
     if (row.classList && row.classList.add) {
       row.classList.add("saved");
+      if (row.classList.remove) {
+        row.classList.remove("skipped");
+      }
     }
 
     if (label) {
@@ -256,8 +307,9 @@
 
   function persistSetInput(exerciseIndex, setIndex) {
     var session = getActiveSession();
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
 
-    if (!session || !session.exercises) {
+    if (!session || !session.exercises || isExerciseLocked(exercise)) {
       return;
     }
 
@@ -270,7 +322,7 @@
     var status = document.querySelector("#workout-save-status");
     var exercise = session.exercises[exerciseIndex];
 
-    if (!exercise) {
+    if (!exercise || isExerciseLocked(exercise)) {
       return;
     }
 
@@ -285,7 +337,7 @@
     }
 
     if (shouldAdvance !== false) {
-      advanceToNextSet(exerciseIndex, setIndex);
+      advanceAfterSave(exerciseIndex, setIndex);
     }
   }
 
@@ -293,7 +345,7 @@
     var session = getActiveSession();
     var exercise = session.exercises[exerciseIndex];
 
-    if (!exercise) {
+    if (!exercise || isExerciseLocked(exercise)) {
       return;
     }
 
@@ -303,6 +355,45 @@
     window.TrainingStorage.saveActiveSession(session);
     renderWorkoutLogger();
     focusSet(exerciseIndex, exercise.loggedSets.length - 1);
+  }
+
+  function skipSet(exerciseIndex, setIndex) {
+    var session = getActiveSession();
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+
+    if (!exercise || isExerciseLocked(exercise)) {
+      return;
+    }
+
+    ensureLoggedSets(exercise);
+    exercise.loggedSets[setIndex] = Object.assign({}, exercise.loggedSets[setIndex], {
+      completed: false,
+      skipped: true,
+      skippedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    window.TrainingStorage.saveActiveSession(session);
+    renderWorkoutLogger();
+    advanceAfterSave(exerciseIndex, setIndex);
+  }
+
+  function unskipSet(exerciseIndex, setIndex) {
+    var session = getActiveSession();
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+
+    if (!exercise || isExerciseLocked(exercise)) {
+      return;
+    }
+
+    ensureLoggedSets(exercise);
+    exercise.loggedSets[setIndex] = Object.assign({}, exercise.loggedSets[setIndex], {
+      skipped: false,
+      skippedAt: null,
+      updatedAt: new Date().toISOString()
+    });
+    window.TrainingStorage.saveActiveSession(session);
+    renderWorkoutLogger();
+    focusSet(exerciseIndex, setIndex);
   }
 
   function findNextUnsavedSet(startExerciseIndex, startSetIndex) {
@@ -319,7 +410,7 @@
       setIndex = exerciseIndex === startExerciseIndex ? startSetIndex + 1 : 0;
 
       for (; setIndex < session.exercises[exerciseIndex].loggedSets.length; setIndex += 1) {
-        if (!isSetCompleted(session.exercises[exerciseIndex].loggedSets[setIndex])) {
+        if (!isSetCompleted(session.exercises[exerciseIndex].loggedSets[setIndex]) && !session.exercises[exerciseIndex].loggedSets[setIndex].skipped) {
           return {
             exerciseIndex: exerciseIndex,
             setIndex: setIndex
@@ -331,7 +422,30 @@
     return null;
   }
 
-  function focusSet(exerciseIndex, setIndex) {
+  function findNextUnsavedSetInExercise(exerciseIndex, startSetIndex) {
+    var session = getActiveSession();
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+    var setIndex;
+
+    if (!exercise) {
+      return null;
+    }
+
+    ensureLoggedSets(exercise);
+
+    for (setIndex = startSetIndex + 1; setIndex < exercise.loggedSets.length; setIndex += 1) {
+      if (!isSetCompleted(exercise.loggedSets[setIndex]) && !exercise.loggedSets[setIndex].skipped) {
+        return {
+          exerciseIndex: exerciseIndex,
+          setIndex: setIndex
+        };
+      }
+    }
+
+    return null;
+  }
+
+  function focusSet(exerciseIndex, setIndex, alignToTop) {
     var row = getSetRow(exerciseIndex, setIndex);
     var input;
 
@@ -342,11 +456,36 @@
     input = row.querySelector('[data-field="weightKg"]') || row.querySelector('[data-field="reps"]') || row.querySelector("input");
 
     if (row.scrollIntoView) {
-      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      row.scrollIntoView({ behavior: "smooth", block: alignToTop ? "start" : "center" });
     }
 
     if (input && input.focus) {
-      input.focus({ preventScroll: true });
+      setTimeout(function () {
+        input.focus({ preventScroll: true });
+      }, 120);
+    }
+  }
+
+  function focusExerciseCard(exerciseIndex) {
+    var card = document.querySelector('[data-exercise-card="' + exerciseIndex + '"]');
+
+    if (card && card.scrollIntoView) {
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function focusExerciseActions(exerciseIndex) {
+    var actions = document.querySelector('[data-exercise-actions="' + exerciseIndex + '"]');
+    var button = actions ? actions.querySelector("button") : null;
+
+    if (actions && actions.scrollIntoView) {
+      actions.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    if (button && button.focus) {
+      setTimeout(function () {
+        button.focus({ preventScroll: true });
+      }, 120);
     }
   }
 
@@ -366,15 +505,55 @@
     }
   }
 
-  function advanceToNextSet(exerciseIndex, setIndex) {
-    var nextSet = findNextUnsavedSet(exerciseIndex, setIndex);
+  function advanceAfterSave(exerciseIndex, setIndex) {
+    var nextSet = findNextUnsavedSetInExercise(exerciseIndex, setIndex);
 
     if (nextSet) {
       focusSet(nextSet.exerciseIndex, nextSet.setIndex);
       return;
     }
 
-    focusFinishButton();
+    focusExerciseActions(exerciseIndex);
+  }
+
+  function completeExercise(exerciseIndex) {
+    var session = getActiveSession();
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+    var nextExerciseIndex = exerciseIndex + 1;
+
+    if (!exercise) {
+      return;
+    }
+
+    ensureLoggedSets(exercise);
+    exercise.loggedSets.forEach(function (set, setIndex) {
+      updateSetFromRow(session, exerciseIndex, setIndex, false);
+    });
+    exercise.exerciseCompleted = true;
+    exercise.exerciseCompletedAt = new Date().toISOString();
+    window.TrainingStorage.saveActiveSession(session);
+    renderWorkoutLogger();
+
+    if (session.exercises[nextExerciseIndex]) {
+      focusExerciseCard(nextExerciseIndex);
+    } else {
+      focusFinishButton();
+    }
+  }
+
+  function unlockExercise(exerciseIndex) {
+    var session = getActiveSession();
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+
+    if (!exercise) {
+      return;
+    }
+
+    exercise.exerciseCompleted = false;
+    exercise.exerciseCompletedAt = null;
+    window.TrainingStorage.saveActiveSession(session);
+    renderWorkoutLogger();
+    focusExerciseCard(exerciseIndex);
   }
 
   function optionMarkup(options, selected) {
@@ -493,14 +672,37 @@
   function handleWorkoutClick(event) {
     var saveSetTarget = event.target.dataset ? event.target.dataset.saveSet : null;
     var addSetTarget = event.target.dataset ? event.target.dataset.addSet : null;
+    var skipSetTarget = event.target.dataset ? event.target.dataset.skipSet : null;
+    var unskipSetTarget = event.target.dataset ? event.target.dataset.unskipSet : null;
+    var completeExerciseTarget = event.target.dataset ? event.target.dataset.completeExercise : null;
+    var unlockExerciseTarget = event.target.dataset ? event.target.dataset.unlockExercise : null;
+    var parts;
 
     if (saveSetTarget) {
-      var parts = saveSetTarget.split(":");
+      parts = saveSetTarget.split(":");
       saveSet(Number(parts[0]), Number(parts[1]));
     }
 
     if (addSetTarget) {
       addSet(Number(addSetTarget));
+    }
+
+    if (skipSetTarget) {
+      parts = skipSetTarget.split(":");
+      skipSet(Number(parts[0]), Number(parts[1]));
+    }
+
+    if (unskipSetTarget) {
+      parts = unskipSetTarget.split(":");
+      unskipSet(Number(parts[0]), Number(parts[1]));
+    }
+
+    if (completeExerciseTarget) {
+      completeExercise(Number(completeExerciseTarget));
+    }
+
+    if (unlockExerciseTarget) {
+      unlockExercise(Number(unlockExerciseTarget));
     }
   }
 
@@ -569,6 +771,10 @@
     renderWorkoutLogger: renderWorkoutLogger,
     saveSet: saveSet,
     addSet: addSet,
+    skipSet: skipSet,
+    unskipSet: unskipSet,
+    completeExercise: completeExercise,
+    unlockExercise: unlockExercise,
     finishWorkout: renderFeedbackForm,
     renderFeedbackForm: renderFeedbackForm,
     collectFeedback: collectFeedback,

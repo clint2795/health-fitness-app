@@ -317,6 +317,14 @@ input[readonly] {
   background: #0c1117;
 }
 
+input:disabled,
+select:disabled,
+textarea:disabled,
+button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
 input[type="checkbox"] {
   width: 1.45rem;
   min-height: 1.45rem;
@@ -433,6 +441,11 @@ input[type="checkbox"] {
   gap: 0.9rem;
 }
 
+.workout-exercise-card.completed-exercise {
+  border-color: #2f865d;
+  background: linear-gradient(180deg, #0c1511, var(--surface));
+}
+
 .workout-exercise-card h2 {
   font-size: 1.35rem;
 }
@@ -469,8 +482,8 @@ input[type="checkbox"] {
 .workout-set-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  padding: 0.9rem;
+  gap: 0.55rem;
+  padding: 0.7rem;
   background: #080c11;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -479,6 +492,11 @@ input[type="checkbox"] {
 .workout-set-row.saved {
   background: #0b1712;
   border-color: #2f865d;
+}
+
+.workout-set-row.skipped {
+  background: #15120d;
+  border-color: #6a5125;
 }
 
 .set-row-header {
@@ -510,24 +528,54 @@ input[type="checkbox"] {
   border-color: #2f865d;
 }
 
+.workout-set-row.skipped .saved-label {
+  color: #fff0d0;
+  background: var(--warning-soft);
+  border-color: #8a6728;
+}
+
 .workout-set-row label {
   font-size: 1rem;
 }
 
 .workout-set-row input {
-  min-height: 3.4rem;
-  padding-inline: 0.65rem;
-  font-size: 1.15rem;
+  min-height: 2.45rem;
+  padding: 0.45rem 0.5rem;
+  font-size: 1.05rem;
   font-weight: 800;
   text-align: center;
 }
 
-.workout-set-row .button {
+.set-button-row {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
 }
 
-.add-set-button {
-  margin-top: 0.25rem;
+.workout-set-row .button {
+  min-height: 2.7rem;
+  padding-block: 0.55rem;
+}
+
+.exercise-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  padding-top: 0.35rem;
+}
+
+.exercise-actions.completed {
+  padding: 0.85rem;
+  background: #0b1712;
+  border: 1px solid #2f865d;
+  border-radius: var(--radius-sm);
+}
+
+.exercise-complete-label {
+  margin-bottom: 0;
+  color: #dff8ea;
+  font-weight: 850;
 }
 
 .feedback-section[hidden] {
@@ -627,6 +675,10 @@ input[type="checkbox"] {
   }
 
   .workout-set-row {
+    grid-template-columns: 1fr;
+  }
+
+  .set-button-row {
     grid-template-columns: 1fr;
   }
 }
