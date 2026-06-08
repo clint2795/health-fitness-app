@@ -27,7 +27,7 @@
 
 html {
   min-width: 320px;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background: var(--background);
   font-size: 16px;
@@ -561,6 +561,12 @@ input[type="checkbox"] {
   gap: 0.7rem;
 }
 
+.workout-exercise-card.current-exercise-card {
+  position: relative;
+  border-color: #3c6682;
+  box-shadow: inset 3px 0 0 var(--primary), var(--shadow);
+}
+
 .workout-exercise-card.completed-exercise {
   border-color: #343b45;
   background: linear-gradient(180deg, #0a0d11, #090c10);
@@ -578,6 +584,8 @@ input[type="checkbox"] {
 
 .workout-card-header {
   align-items: flex-start;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid #1c232b;
 }
 
 .workout-header-actions {
@@ -593,6 +601,15 @@ input[type="checkbox"] {
   min-height: 2.6rem;
   padding: 0.5rem 0.7rem;
   font-size: 1rem;
+}
+
+.current-exercise-label {
+  margin-bottom: 0.25rem;
+  color: #8ea7ba;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .set-progress {
@@ -641,6 +658,12 @@ input[type="checkbox"] {
   opacity: 0.86;
 }
 
+.workout-set-row.saved input {
+  color: #aeb7c1;
+  background: #090d11;
+  border-color: #222a33;
+}
+
 .workout-set-row.skipped {
   color: #d0c5b0;
   background: #100f0c;
@@ -662,6 +685,14 @@ input[type="checkbox"] {
   gap: 0.55rem;
   color: var(--text);
   font-size: 1rem;
+}
+
+.logged-set-summary {
+  grid-column: 1 / -1;
+  margin: -0.1rem 0 0.1rem;
+  color: #aeb7c1;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .saved-label {
@@ -704,8 +735,8 @@ input[type="checkbox"] {
 .set-button-row {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.45rem;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
 }
 
 .workout-set-row .button {
@@ -713,11 +744,40 @@ input[type="checkbox"] {
   padding-block: 0.55rem;
 }
 
+.set-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.set-secondary-button,
+.exercise-secondary-button {
+  min-height: 2.35rem;
+  padding: 0.45rem 0.55rem;
+  color: var(--muted);
+  background: #0a0e13;
+  border-color: #202832;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.workout-set-row.saved .save-set-button {
+  color: #aeb7c1;
+  background: #0a0e13;
+  border-color: #202832;
+}
+
 .exercise-actions {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.55rem;
   padding-top: 0.35rem;
+}
+
+.exercise-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
 }
 
 .substitution-note {

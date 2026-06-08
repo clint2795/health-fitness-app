@@ -261,20 +261,23 @@
       var savedLabel = set.skipped ? "Skipped" : (isSetCompleted(set) ? "Logged" : "Not logged");
       var disabledAttribute = locked ? " disabled" : "";
       var skipButton = set.skipped
-        ? '<button class="button skip-set-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo Skip</button>'
-        : '<button class="button skip-set-button" type="button" data-skip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Skip Set</button>';
-      var removeButton = '<button class="button remove-set-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Remove</button>';
+        ? '<button class="button set-secondary-button skip-set-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo Skip</button>'
+        : '<button class="button set-secondary-button skip-set-button" type="button" data-skip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Skip</button>';
+      var removeButton = '<button class="button set-secondary-button remove-set-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Remove</button>';
+      var summary = isSetCompleted(set)
+        ? '<p class="logged-set-summary">Set ' + (setIndex + 1) + ' - ' + escapeHtml(getSetValue(set, "weightKg") || "0") + 'kg x ' + escapeHtml(getSetValue(set, "reps") || "0") + ' @ ' + escapeHtml(getSetValue(set, "actualRir") || "-") + ' RIR</p>'
+        : "";
 
       return (
         '<div class="workout-set-row' + savedClass + skippedClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
           '<div class="set-row-header"><strong>Set ' + (setIndex + 1) + ' of ' + exercise.loggedSets.length + '</strong><span class="saved-label">' + savedLabel + '</span></div>' +
+          summary +
           '<label>Weight<input type="number" inputmode="decimal" data-field="weightKg" value="' + escapeHtml(getSetValue(set, "weightKg")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Reps<input type="number" inputmode="numeric" data-field="reps" value="' + escapeHtml(getSetValue(set, "reps")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Actual RIR<input type="number" inputmode="numeric" data-field="actualRir" value="' + escapeHtml(getSetValue(set, "actualRir")) + '" placeholder="' + escapeHtml(exercise.targetRir || "") + '"' + disabledAttribute + '></label>' +
           '<div class="set-button-row">' +
-            '<button class="button save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Log Set</button>' +
-            skipButton +
-            removeButton +
+            '<button class="button button-primary save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Log Set</button>' +
+            '<div class="set-secondary-actions">' + skipButton + removeButton + '</div>' +
           '</div>' +
         '</div>'
       );
@@ -302,11 +305,25 @@
 
     return (
       '<div class="exercise-actions" data-exercise-actions="' + exerciseIndex + '">' +
-        '<button class="button add-set-button" type="button" data-add-set="' + exerciseIndex + '">Add Set</button>' +
-        '<button class="button" type="button" data-skip-exercise="' + exerciseIndex + '">Skip Exercise</button>' +
-        '<button class="button button-primary complete-exercise-button" type="button" data-complete-exercise="' + exerciseIndex + '">Complete This Exercise</button>' +
+        '<button class="button button-primary complete-exercise-button" type="button" data-complete-exercise="' + exerciseIndex + '">Complete Exercise</button>' +
+        '<div class="exercise-secondary-actions">' +
+          '<button class="button exercise-secondary-button add-set-button" type="button" data-add-set="' + exerciseIndex + '">+ Add Set</button>' +
+          '<button class="button exercise-secondary-button" type="button" data-skip-exercise="' + exerciseIndex + '">Skip Exercise</button>' +
+        '</div>' +
       '</div>'
     );
+  }
+
+  function getCurrentExerciseIndex(session) {
+    return (session.exercises || []).findIndex(function (exercise) {
+      return !isExerciseLocked(exercise);
+    });
+  }
+
+  function areAllExercisesResolved(session) {
+    return (session.exercises || []).length > 0 && session.exercises.every(function (exercise) {
+      return isExerciseLocked(exercise);
+    });
   }
 
   function renderWorkoutLogger() {
@@ -315,6 +332,7 @@
     var title = document.querySelector("#workout-session-title");
     var week = document.querySelector("#workout-session-week");
     var meta = document.querySelector("#workout-session-meta");
+    var finishButton = document.querySelector("#finish-workout-button");
 
     if (!session || !container) {
       return;
@@ -326,16 +344,28 @@
       meta.textContent = session.date + " - " + session.targetRir + " - " + session.muscles.map(getMuscleLabel).join(", ");
     }
 
+    if (finishButton && finishButton.classList) {
+      if (areAllExercisesResolved(session)) {
+        finishButton.classList.add("button-primary");
+      } else {
+        finishButton.classList.remove("button-primary");
+      }
+    }
+
     renderPrep(session);
+    var currentExerciseIndex = getCurrentExerciseIndex(session);
 
     container.innerHTML = session.exercises.map(function (exercise, index) {
       var lockedClass = isExerciseLocked(exercise) ? " completed-exercise" : "";
       var skippedClass = isExerciseSkipped(exercise) ? " skipped-exercise" : "";
+      var currentClass = index === currentExerciseIndex ? " current-exercise-card" : "";
+      var currentLabel = index === currentExerciseIndex ? '<p class="current-exercise-label">Current Exercise</p>' : "";
 
       return (
-        '<article class="card workout-exercise-card' + lockedClass + skippedClass + '" data-exercise-card="' + index + '">' +
+        '<article class="card workout-exercise-card' + lockedClass + skippedClass + currentClass + '" data-exercise-card="' + index + '">' +
           '<div class="card-header workout-card-header">' +
             '<div>' +
+              currentLabel +
               '<h2>' + escapeHtml(exercise.name) + '</h2>' +
               '<p class="subtle">' + escapeHtml(getMuscleLabel(exercise.primaryMuscle)) + ' - ' + escapeHtml(exercise.repRange) + ' - ' + escapeHtml(exercise.targetRir) + '</p>' +
             '</div>' +
@@ -1083,60 +1113,61 @@
   }
 
   function handleWorkoutClick(event) {
-    var saveSetTarget = event.target.dataset ? event.target.dataset.saveSet : null;
-    var addSetTarget = event.target.dataset ? event.target.dataset.addSet : null;
-    var removeSetTarget = event.target.dataset ? event.target.dataset.removeSet : null;
-    var skipSetTarget = event.target.dataset ? event.target.dataset.skipSet : null;
-    var unskipSetTarget = event.target.dataset ? event.target.dataset.unskipSet : null;
-    var skipExerciseTarget = event.target.dataset ? event.target.dataset.skipExercise : null;
-    var unskipExerciseTarget = event.target.dataset ? event.target.dataset.unskipExercise : null;
-    var completeExerciseTarget = event.target.dataset ? event.target.dataset.completeExercise : null;
-    var unlockExerciseTarget = event.target.dataset ? event.target.dataset.unlockExercise : null;
-    var changeExerciseTarget = event.target.dataset ? event.target.dataset.changeExercise : null;
+    var target = event.target;
+    var saveSetButton = target.closest ? target.closest("[data-save-set]") : null;
+    var addSetButton = target.closest ? target.closest("[data-add-set]") : null;
+    var removeSetButton = target.closest ? target.closest("[data-remove-set]") : null;
+    var skipSetButton = target.closest ? target.closest("[data-skip-set]") : null;
+    var unskipSetButton = target.closest ? target.closest("[data-unskip-set]") : null;
+    var skipExerciseButton = target.closest ? target.closest("[data-skip-exercise]") : null;
+    var unskipExerciseButton = target.closest ? target.closest("[data-unskip-exercise]") : null;
+    var completeExerciseButton = target.closest ? target.closest("[data-complete-exercise]") : null;
+    var unlockExerciseButton = target.closest ? target.closest("[data-unlock-exercise]") : null;
+    var changeExerciseButton = target.closest ? target.closest("[data-change-exercise]") : null;
     var parts;
 
-    if (saveSetTarget) {
-      parts = saveSetTarget.split(":");
+    if (saveSetButton) {
+      parts = saveSetButton.dataset.saveSet.split(":");
       saveSet(Number(parts[0]), Number(parts[1]));
     }
 
-    if (addSetTarget) {
-      addSet(Number(addSetTarget));
+    if (addSetButton) {
+      addSet(Number(addSetButton.dataset.addSet));
     }
 
-    if (removeSetTarget) {
-      parts = removeSetTarget.split(":");
+    if (removeSetButton) {
+      parts = removeSetButton.dataset.removeSet.split(":");
       removeSet(Number(parts[0]), Number(parts[1]));
     }
 
-    if (skipSetTarget) {
-      parts = skipSetTarget.split(":");
+    if (skipSetButton) {
+      parts = skipSetButton.dataset.skipSet.split(":");
       skipSet(Number(parts[0]), Number(parts[1]));
     }
 
-    if (unskipSetTarget) {
-      parts = unskipSetTarget.split(":");
+    if (unskipSetButton) {
+      parts = unskipSetButton.dataset.unskipSet.split(":");
       unskipSet(Number(parts[0]), Number(parts[1]));
     }
 
-    if (completeExerciseTarget) {
-      completeExercise(Number(completeExerciseTarget));
+    if (completeExerciseButton) {
+      completeExercise(Number(completeExerciseButton.dataset.completeExercise));
     }
 
-    if (skipExerciseTarget) {
-      openSkipExerciseModal(Number(skipExerciseTarget));
+    if (skipExerciseButton) {
+      openSkipExerciseModal(Number(skipExerciseButton.dataset.skipExercise));
     }
 
-    if (unskipExerciseTarget) {
-      unskipExercise(Number(unskipExerciseTarget));
+    if (unskipExerciseButton) {
+      unskipExercise(Number(unskipExerciseButton.dataset.unskipExercise));
     }
 
-    if (unlockExerciseTarget) {
-      unlockExercise(Number(unlockExerciseTarget));
+    if (unlockExerciseButton) {
+      unlockExercise(Number(unlockExerciseButton.dataset.unlockExercise));
     }
 
-    if (changeExerciseTarget) {
-      openChangeExerciseModal(Number(changeExerciseTarget));
+    if (changeExerciseButton) {
+      openChangeExerciseModal(Number(changeExerciseButton.dataset.changeExercise));
     }
   }
 
