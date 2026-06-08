@@ -269,7 +269,15 @@
     }).join("");
   }
 
-  function createSetInputs(exerciseIndex, exercise) {
+  function getSetSummaryText(set) {
+    var weight = getSetValue(set, "weightKg") || "0";
+    var reps = getSetValue(set, "reps") || "0";
+    var rir = getSetValue(set, "actualRir");
+
+    return escapeHtml(weight) + "kg x " + escapeHtml(reps) + (rir ? " @ " + escapeHtml(rir) + " RIR" : "");
+  }
+
+  function createSetInputs(exerciseIndex, exercise, isCurrentExercise) {
     ensureLoggedSets(exercise);
     var activeSetIndex = getActiveSetIndex(exercise);
 
@@ -284,21 +292,46 @@
         ? '<button class="button set-secondary-button skip-set-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo Skip</button>'
         : '<button class="button set-secondary-button skip-set-button" type="button" data-skip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Skip</button>';
       var removeButton = '<button class="button set-secondary-button remove-set-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Remove</button>';
-      var rirValue = getSetValue(set, "actualRir");
-      var summary = isSetCompleted(set)
-        ? '<p class="logged-set-summary">' + escapeHtml(getSetValue(set, "weightKg") || "0") + 'kg x ' + escapeHtml(getSetValue(set, "reps") || "0") + (rirValue ? ' @ ' + escapeHtml(rirValue) + ' RIR' : '') + '</p>'
-        : "";
-      var logButtonText = isSetCompleted(set) ? "Update" : "Log Set";
+      var isActiveSet = !locked && isCurrentExercise && setIndex === activeSetIndex;
+
+      if (isSetCompleted(set)) {
+        return (
+          '<div class="workout-set-summary logged-summary" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
+            '<span class="set-state-mark">Done</span>' +
+            '<p><strong>Set ' + (setIndex + 1) + '</strong> - ' + getSetSummaryText(set) + '</p>' +
+            '<button class="set-text-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Remove</button>' +
+          '</div>'
+        );
+      }
+
+      if (set.skipped) {
+        return (
+          '<div class="workout-set-summary skipped-summary" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
+            '<span class="set-state-mark">Skip</span>' +
+            '<p><strong>Set ' + (setIndex + 1) + '</strong> - skipped</p>' +
+            '<button class="set-text-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo</button>' +
+          '</div>'
+        );
+      }
+
+      if (!isActiveSet) {
+        return (
+          '<div class="workout-set-summary waiting-summary" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
+            '<span class="set-state-mark"></span>' +
+            '<p><strong>Set ' + (setIndex + 1) + '</strong> - waiting</p>' +
+            (isCurrentExercise && !locked ? '<button class="set-text-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '">Remove</button>' : '') +
+          '</div>'
+        );
+      }
 
       return (
         '<div class="workout-set-row' + savedClass + skippedClass + activeClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
           '<div class="set-row-header"><strong>Set ' + (setIndex + 1) + ' of ' + exercise.loggedSets.length + '</strong><span class="saved-label">' + savedLabel + '</span></div>' +
-          summary +
           '<label>Weight<input type="number" inputmode="decimal" data-field="weightKg" value="' + escapeHtml(getSetValue(set, "weightKg")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Reps<input type="number" inputmode="numeric" data-field="reps" value="' + escapeHtml(getSetValue(set, "reps")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Actual RIR<input type="number" inputmode="numeric" data-field="actualRir" value="' + escapeHtml(getSetValue(set, "actualRir")) + '" placeholder="' + escapeHtml(exercise.targetRir || "") + '"' + disabledAttribute + '></label>' +
           '<div class="set-button-row">' +
-            '<button class="button button-primary save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>' + logButtonText + '</button>' +
+            '<button class="button button-primary save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Log Set</button>' +
             '<div class="set-secondary-actions">' + skipButton + removeButton + '</div>' +
           '</div>' +
         '</div>'
@@ -306,7 +339,7 @@
     }).join("");
   }
 
-  function getExerciseActionsMarkup(exerciseIndex, exercise) {
+  function getExerciseActionsMarkup(exerciseIndex, exercise, isCurrentExercise) {
     if (isExerciseSkipped(exercise)) {
       return (
         '<div class="exercise-actions completed skipped-exercise-actions" data-exercise-actions="' + exerciseIndex + '">' +
@@ -321,6 +354,21 @@
         '<div class="exercise-actions completed" data-exercise-actions="' + exerciseIndex + '">' +
           '<p class="exercise-complete-label">Exercise complete</p>' +
           '<button class="button" type="button" data-unlock-exercise="' + exerciseIndex + '">Edit / Unlock</button>' +
+        '</div>'
+      );
+    }
+
+    if (!isCurrentExercise) {
+      return "";
+    }
+
+    if (getActiveSetIndex(exercise) !== -1) {
+      return (
+        '<div class="exercise-actions" data-exercise-actions="' + exerciseIndex + '">' +
+          '<div class="exercise-secondary-actions">' +
+            '<button class="button exercise-secondary-button add-set-button" type="button" data-add-set="' + exerciseIndex + '">+ Add Set</button>' +
+            '<button class="button exercise-secondary-button" type="button" data-skip-exercise="' + exerciseIndex + '">Skip Exercise</button>' +
+          '</div>' +
         '</div>'
       );
     }
@@ -346,6 +394,38 @@
     return (session.exercises || []).length > 0 && session.exercises.every(function (exercise) {
       return isExerciseLocked(exercise);
     });
+  }
+
+  function getNextExercisePreview(session, currentExerciseIndex) {
+    var nextExercise = (session.exercises || []).slice(currentExerciseIndex + 1).find(function (exercise) {
+      return !isExerciseLocked(exercise);
+    });
+
+    if (!nextExercise) {
+      return "";
+    }
+
+    return (
+      '<section class="next-exercise-preview">' +
+        '<p class="current-exercise-label">Next</p>' +
+        '<div><strong>' + escapeHtml(nextExercise.name) + '</strong><span>' + escapeHtml(nextExercise.plannedSets) + ' sets</span></div>' +
+      '</section>'
+    );
+  }
+
+  function renderQueuedExerciseCard(exercise, index) {
+    return (
+      '<article class="card workout-exercise-card queued-exercise-card" data-exercise-card="' + index + '">' +
+        '<div class="queued-exercise-row">' +
+          '<div>' +
+            '<p class="current-exercise-label">Upcoming</p>' +
+            '<h2>' + escapeHtml(exercise.name) + '</h2>' +
+            '<p class="subtle">' + escapeHtml(getMuscleLabel(exercise.primaryMuscle)) + ' - ' + escapeHtml(exercise.plannedSets) + ' sets</p>' +
+          '</div>' +
+          '<span class="badge">waiting</span>' +
+        '</div>' +
+      '</article>'
+    );
   }
 
   function renderWorkoutLogger() {
@@ -382,6 +462,11 @@
       var skippedClass = isExerciseSkipped(exercise) ? " skipped-exercise" : "";
       var currentClass = index === currentExerciseIndex ? " current-exercise-card" : "";
       var currentLabel = index === currentExerciseIndex ? '<p class="current-exercise-label">Current Exercise</p>' : "";
+      var isCurrentExercise = index === currentExerciseIndex;
+
+      if (!isCurrentExercise && !isExerciseLocked(exercise)) {
+        return renderQueuedExerciseCard(exercise, index);
+      }
 
       return (
         '<article class="card workout-exercise-card' + lockedClass + skippedClass + currentClass + '" data-exercise-card="' + index + '">' +
@@ -397,9 +482,10 @@
             '</div>' +
           '</div>' +
           getSubstitutionMarkup(exercise) +
-          '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' +
-          createSetInputs(index, exercise) +
-          getExerciseActionsMarkup(index, exercise) +
+          (isCurrentExercise ? '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' : '') +
+          createSetInputs(index, exercise, isCurrentExercise) +
+          getExerciseActionsMarkup(index, exercise, isCurrentExercise) +
+          (isCurrentExercise ? getNextExercisePreview(session, currentExerciseIndex) : '') +
         '</article>'
       );
     }).join("");
