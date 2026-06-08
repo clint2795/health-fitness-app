@@ -681,7 +681,7 @@
     }
 
     return exercise.loggedSets.filter(function (set) {
-      return set && (set.weight || set.reps || set.actualRir);
+      return set && (set.weightKg || set.weight || set.reps || set.actualRir);
     }).length;
   }
 

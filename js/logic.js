@@ -298,7 +298,7 @@
   function countExerciseSets(exercise) {
     if (Array.isArray(exercise.loggedSets)) {
       var logged = exercise.loggedSets.filter(function (set) {
-        return set && (set.weight || set.reps || set.actualRir);
+        return set && (set.weightKg || set.weight || set.reps || set.actualRir);
       }).length;
 
       if (logged > 0) {
