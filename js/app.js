@@ -98,7 +98,8 @@
     }
 
     var state = window.TrainingStorage.getAppState();
-    var session = todaySessionDraft || window.TrainingLogic.generateTodaySession(state);
+    var context = getTodaySessionContext(state);
+    var session = context.session;
     var warnings = window.TrainingLogic.getRecoveryWarnings();
     var title = document.querySelector("#today-session-title");
     var week = document.querySelector("#today-week");
@@ -110,16 +111,19 @@
     var warningsList = document.querySelector("#recovery-warnings");
     var prepContainer = document.querySelector("#today-prep");
     var exercisesContainer = document.querySelector("#today-exercises");
+    var plannedWeekContainer = document.querySelector("#planned-week-sessions");
     var weeklyVolumeContainer = document.querySelector("#weekly-volume-status");
     var sessionReason = document.querySelector("#today-session-reason");
     var generateButton = document.querySelector("#generate-session-button");
     var startButton = document.querySelector("#start-workout-button");
+    var markCompletedButton = document.querySelector("#mark-active-completed-button");
+    var discardActiveButton = document.querySelector("#discard-active-session-button");
 
     if (title) title.textContent = session.title;
     if (week) week.textContent = "Week " + session.mesocycleWeek;
-    if (summary) summary.textContent = "Muscle-priority session for " + session.date + ".";
+    if (summary) summary.textContent = getTodaySummaryText(context, state);
     if (summary && (state.activeGoalPreset || state.selectedSessionTemplate)) {
-      summary.textContent = "Muscle-priority session for " + session.date + ". " + getActiveSetupSummary(state);
+      summary.textContent += " " + getActiveSetupSummary(state);
     }
     if (goalName) goalName.textContent = state.userProfile.goalName;
     if (bodyweight) bodyweight.textContent = state.userProfile.bodyweightKg + " kg";
@@ -140,6 +144,9 @@
     if (exercisesContainer) {
       exercisesContainer.innerHTML = renderPlanItems(session.exercises, "exercise");
     }
+    if (plannedWeekContainer) {
+      plannedWeekContainer.innerHTML = renderPlannedWeekSessions(state);
+    }
     if (weeklyVolumeContainer) {
       weeklyVolumeContainer.innerHTML = renderWeeklyVolumeStatus(session.remainingWeeklySets);
     }
@@ -148,19 +155,185 @@
     }
     if (generateButton) {
       generateButton.onclick = function () {
-        todaySessionDraft = null;
+        if (!confirmBeforeReplacingToday()) {
+          return;
+        }
+
+        window.TrainingStorage.clearActiveSession();
+        saveNewTodayDraft(window.TrainingStorage.getAppState());
         renderHomePage();
       };
     }
     if (startButton) {
+      startButton.textContent = context.mode === "active" ? "Resume Workout" : "Start Workout";
       startButton.onclick = function () {
+        var activeSession = window.TrainingStorage.getActiveSession();
+
+        if (context.mode === "active") {
+          window.location.href = "workout.html";
+          return;
+        }
+
+        if (activeSession && activeSession.status !== "completed" && !confirm("You already have a session in progress. Replace it?")) {
+          return;
+        }
+
+        saveCurrentTodayDraft(session);
         window.TrainingStorage.saveActiveSession(session);
         window.location.href = "workout.html";
+      };
+    }
+    if (markCompletedButton) {
+      markCompletedButton.hidden = context.mode !== "active";
+      markCompletedButton.onclick = function () {
+        if (confirm("Mark this unfinished workout as completed?")) {
+          markActiveSessionCompleted();
+          renderHomePage();
+        }
+      };
+    }
+    if (discardActiveButton) {
+      discardActiveButton.hidden = context.mode !== "active";
+      discardActiveButton.onclick = function () {
+        if (confirm("Discard this unfinished workout and generate a new session?")) {
+          window.TrainingStorage.clearActiveSession();
+          saveNewTodayDraft(window.TrainingStorage.getAppState());
+          renderHomePage();
+        }
       };
     }
     bindTodayAdjustmentControls(session);
     bindTodayChangeExerciseModal();
     renderDebugPanel(state, session);
+  }
+
+  function getTodayDate() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function isUnfinishedSession(session) {
+    return Boolean(session && session.status !== "completed");
+  }
+
+  function getPlannedStatusForSession(state, session) {
+    var planned = window.TrainingLogic.getPlannedWeekSessions
+      ? window.TrainingLogic.getPlannedWeekSessions(state)
+      : [];
+    var match = planned.find(function (item) {
+      return item.templateId === session.templateId;
+    });
+
+    return match ? match.status : "Planned";
+  }
+
+  function saveCurrentTodayDraft(session) {
+    var draft = {
+      date: getTodayDate(),
+      sessionNumber: session.sessionNumber || null,
+      templateId: session.templateId || "",
+      generatedAt: new Date().toISOString(),
+      session: clone(session)
+    };
+
+    todaySessionDraft = clone(session);
+    window.TrainingStorage.saveTodayDraft(draft);
+    return draft;
+  }
+
+  function saveNewTodayDraft(state) {
+    var session = window.TrainingLogic.generateTodaySession(state);
+
+    saveCurrentTodayDraft(session);
+    return session;
+  }
+
+  function getTodaySessionContext(state) {
+    var activeSession = window.TrainingStorage.getActiveSession();
+    var storedDraft = window.TrainingStorage.getTodayDraft ? window.TrainingStorage.getTodayDraft() : null;
+    var today = getTodayDate();
+    var session;
+
+    if (isUnfinishedSession(activeSession)) {
+      return {
+        mode: "active",
+        session: activeSession,
+        statusLabel: "Unfinished workout found"
+      };
+    }
+
+    if (storedDraft && storedDraft.date === today && storedDraft.session) {
+      todaySessionDraft = clone(storedDraft.session);
+      return {
+        mode: "draft",
+        session: storedDraft.session,
+        statusLabel: getPlannedStatusForSession(state, storedDraft.session)
+      };
+    }
+
+    if (storedDraft && storedDraft.date !== today && storedDraft.session && storedDraft.session.status !== "completed") {
+      if (confirm("An older generated session exists. Resume it? Press Cancel to discard it and generate today's planned session.")) {
+        todaySessionDraft = clone(storedDraft.session);
+        return {
+          mode: "oldDraft",
+          session: storedDraft.session,
+          statusLabel: "Older generated session"
+        };
+      }
+
+      window.TrainingStorage.clearTodayDraft();
+      todaySessionDraft = null;
+    }
+
+    session = saveNewTodayDraft(state);
+
+    return {
+      mode: "newDraft",
+      session: session,
+      statusLabel: getPlannedStatusForSession(state, session)
+    };
+  }
+
+  function getTodaySummaryText(context, state) {
+    if (context.mode === "active") {
+      return "Unfinished workout found. Resume it, mark it completed, or discard it before generating a new session.";
+    }
+
+    return "Today's Session - " + context.statusLabel + ".";
+  }
+
+  function confirmBeforeReplacingToday() {
+    var activeSession = window.TrainingStorage.getActiveSession();
+    var draft = window.TrainingStorage.getTodayDraft ? window.TrainingStorage.getTodayDraft() : null;
+
+    if (isUnfinishedSession(activeSession) && !confirm("You have an unfinished workout. Replace it?")) {
+      return false;
+    }
+
+    if (draft && draft.date === getTodayDate() && !confirm("Replace today's planned session?")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function markActiveSessionCompleted() {
+    var session = window.TrainingStorage.getActiveSession();
+
+    if (!session) {
+      return;
+    }
+
+    session.status = "completed";
+    session.completedAt = new Date().toISOString();
+    window.TrainingStorage.addCompletedWorkout(session);
+    window.TrainingStorage.markPlannedSessionComplete(session.templateId);
+    window.TrainingStorage.clearActiveSession();
+    window.TrainingStorage.clearTodayDraft();
+    todaySessionDraft = null;
   }
 
   function renderPlanItems(items, type) {
@@ -199,6 +372,26 @@
         '<button class="button compact-button danger-button" type="button" data-today-remove-exercise="' + index + '">Remove</button>' +
       '</div>'
     );
+  }
+
+  function renderPlannedWeekSessions(state) {
+    if (!window.TrainingLogic || !window.TrainingLogic.getPlannedWeekSessions) {
+      return '<p class="subtle">No planned week data available.</p>';
+    }
+
+    return window.TrainingLogic.getPlannedWeekSessions(state).map(function (item) {
+      return (
+        '<article class="plan-card">' +
+          '<div class="card-header">' +
+            '<div>' +
+              '<h3>Session ' + escapeHtml(item.sessionNumber) + ' - ' + escapeHtml(item.name.replace(/^Session \d+ -\s*/, "")) + '</h3>' +
+              '<p class="subtle">' + escapeHtml(item.focus || "") + '</p>' +
+            '</div>' +
+            '<span class="badge">' + escapeHtml(item.status) + '</span>' +
+          '</div>' +
+        '</article>'
+      );
+    }).join("");
   }
 
   function setTodayDraft(session) {
@@ -707,7 +900,26 @@
     container.querySelectorAll("[data-select-template]").forEach(function (button) {
       button.addEventListener("click", function () {
         var latest = collectSetupState();
+        var templateIndex = (latest.sessionTemplates || []).findIndex(function (template) {
+          return template.id === button.dataset.selectTemplate;
+        });
+
         latest.selectedSessionTemplate = button.dataset.selectTemplate;
+        latest.plannedWeek = latest.plannedWeek || {};
+        if (templateIndex !== -1) {
+          latest.plannedWeek.currentWeekSessionIndex = templateIndex + 1;
+          latest.plannedWeek.sessions = (latest.plannedWeek.sessions || []).map(function (session) {
+            if (session.status === "current") {
+              session.status = session.templateId === button.dataset.selectTemplate ? "current" : "planned";
+            }
+
+            if (session.templateId === button.dataset.selectTemplate && session.status !== "completed") {
+              session.status = "current";
+            }
+
+            return session;
+          });
+        }
         window.TrainingStorage.saveAppState(latest);
         renderSessionTemplates(window.TrainingStorage.getAppState());
         var status = document.querySelector("#settings-save-status");

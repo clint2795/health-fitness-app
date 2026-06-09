@@ -269,15 +269,7 @@
     }).join("");
   }
 
-  function getSetSummaryText(set) {
-    var weight = getSetValue(set, "weightKg") || "0";
-    var reps = getSetValue(set, "reps") || "0";
-    var rir = getSetValue(set, "actualRir");
-
-    return escapeHtml(weight) + "kg x " + escapeHtml(reps) + (rir ? " @ " + escapeHtml(rir) + " RIR" : "");
-  }
-
-  function createSetInputs(exerciseIndex, exercise, isCurrentExercise) {
+  function createSetInputs(exerciseIndex, exercise) {
     ensureLoggedSets(exercise);
     var activeSetIndex = getActiveSetIndex(exercise);
 
@@ -292,37 +284,6 @@
         ? '<button class="button set-secondary-button skip-set-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo Skip</button>'
         : '<button class="button set-secondary-button skip-set-button" type="button" data-skip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Skip</button>';
       var removeButton = '<button class="button set-secondary-button remove-set-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Remove</button>';
-      var isActiveSet = !locked && isCurrentExercise && setIndex === activeSetIndex;
-
-      if (isSetCompleted(set)) {
-        return (
-          '<div class="workout-set-summary logged-summary" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
-            '<span class="set-state-mark">Done</span>' +
-            '<p><strong>Set ' + (setIndex + 1) + '</strong> - ' + getSetSummaryText(set) + '</p>' +
-            '<button class="set-text-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Remove</button>' +
-          '</div>'
-        );
-      }
-
-      if (set.skipped) {
-        return (
-          '<div class="workout-set-summary skipped-summary" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
-            '<span class="set-state-mark">Skip</span>' +
-            '<p><strong>Set ' + (setIndex + 1) + '</strong> - skipped</p>' +
-            '<button class="set-text-button" type="button" data-unskip-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Undo</button>' +
-          '</div>'
-        );
-      }
-
-      if (!isActiveSet) {
-        return (
-          '<div class="workout-set-summary waiting-summary" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
-            '<span class="set-state-mark"></span>' +
-            '<p><strong>Set ' + (setIndex + 1) + '</strong> - waiting</p>' +
-            (isCurrentExercise && !locked ? '<button class="set-text-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '">Remove</button>' : '') +
-          '</div>'
-        );
-      }
 
       return (
         '<div class="workout-set-row' + savedClass + skippedClass + activeClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
@@ -339,7 +300,7 @@
     }).join("");
   }
 
-  function getExerciseActionsMarkup(exerciseIndex, exercise, isCurrentExercise) {
+  function getExerciseActionsMarkup(exerciseIndex, exercise) {
     if (isExerciseSkipped(exercise)) {
       return (
         '<div class="exercise-actions completed skipped-exercise-actions" data-exercise-actions="' + exerciseIndex + '">' +
@@ -354,21 +315,6 @@
         '<div class="exercise-actions completed" data-exercise-actions="' + exerciseIndex + '">' +
           '<p class="exercise-complete-label">Exercise complete</p>' +
           '<button class="button" type="button" data-unlock-exercise="' + exerciseIndex + '">Edit / Unlock</button>' +
-        '</div>'
-      );
-    }
-
-    if (!isCurrentExercise) {
-      return "";
-    }
-
-    if (getActiveSetIndex(exercise) !== -1) {
-      return (
-        '<div class="exercise-actions" data-exercise-actions="' + exerciseIndex + '">' +
-          '<div class="exercise-secondary-actions">' +
-            '<button class="button exercise-secondary-button add-set-button" type="button" data-add-set="' + exerciseIndex + '">+ Add Set</button>' +
-            '<button class="button exercise-secondary-button" type="button" data-skip-exercise="' + exerciseIndex + '">Skip Exercise</button>' +
-          '</div>' +
         '</div>'
       );
     }
@@ -394,38 +340,6 @@
     return (session.exercises || []).length > 0 && session.exercises.every(function (exercise) {
       return isExerciseLocked(exercise);
     });
-  }
-
-  function getNextExercisePreview(session, currentExerciseIndex) {
-    var nextExercise = (session.exercises || []).slice(currentExerciseIndex + 1).find(function (exercise) {
-      return !isExerciseLocked(exercise);
-    });
-
-    if (!nextExercise) {
-      return "";
-    }
-
-    return (
-      '<section class="next-exercise-preview">' +
-        '<p class="current-exercise-label">Next</p>' +
-        '<div><strong>' + escapeHtml(nextExercise.name) + '</strong><span>' + escapeHtml(nextExercise.plannedSets) + ' sets</span></div>' +
-      '</section>'
-    );
-  }
-
-  function renderQueuedExerciseCard(exercise, index) {
-    return (
-      '<article class="card workout-exercise-card queued-exercise-card" data-exercise-card="' + index + '">' +
-        '<div class="queued-exercise-row">' +
-          '<div>' +
-            '<p class="current-exercise-label">Upcoming</p>' +
-            '<h2>' + escapeHtml(exercise.name) + '</h2>' +
-            '<p class="subtle">' + escapeHtml(getMuscleLabel(exercise.primaryMuscle)) + ' - ' + escapeHtml(exercise.plannedSets) + ' sets</p>' +
-          '</div>' +
-          '<span class="badge">waiting</span>' +
-        '</div>' +
-      '</article>'
-    );
   }
 
   function renderWorkoutLogger() {
@@ -462,11 +376,6 @@
       var skippedClass = isExerciseSkipped(exercise) ? " skipped-exercise" : "";
       var currentClass = index === currentExerciseIndex ? " current-exercise-card" : "";
       var currentLabel = index === currentExerciseIndex ? '<p class="current-exercise-label">Current Exercise</p>' : "";
-      var isCurrentExercise = index === currentExerciseIndex;
-
-      if (!isCurrentExercise && !isExerciseLocked(exercise)) {
-        return renderQueuedExerciseCard(exercise, index);
-      }
 
       return (
         '<article class="card workout-exercise-card' + lockedClass + skippedClass + currentClass + '" data-exercise-card="' + index + '">' +
@@ -482,10 +391,10 @@
             '</div>' +
           '</div>' +
           getSubstitutionMarkup(exercise) +
-          (isCurrentExercise ? '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' : '') +
-          createSetInputs(index, exercise, isCurrentExercise) +
-          getExerciseActionsMarkup(index, exercise, isCurrentExercise) +
-          (isCurrentExercise ? getNextExercisePreview(session, currentExerciseIndex) : '') +
+          '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' +
+          getProgressMarkup(exercise) +
+          createSetInputs(index, exercise) +
+          getExerciseActionsMarkup(index, exercise) +
         '</article>'
       );
     }).join("");
@@ -1245,7 +1154,9 @@
     window.TrainingStorage.addVolumeRecommendation(
       window.TrainingFeedback.generateVolumeRecommendations(session, window.TrainingStorage.getAppState())
     );
+    window.TrainingStorage.markPlannedSessionComplete(session.templateId);
     window.TrainingStorage.clearActiveSession();
+    window.TrainingStorage.clearTodayDraft();
 
     if (status) {
       status.innerHTML = 'Workout completed. Volume recommendations are ready. <a href="history.html">View history</a>.';

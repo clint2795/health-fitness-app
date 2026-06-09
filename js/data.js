@@ -778,46 +778,102 @@
 
   var sessionTemplates = [
     {
-      id: "visual-upper-priority",
-      name: "Visual Upper Priority",
-      targetMuscles: ["Side Delts", "Upper Chest", "Triceps"],
-      setRange: "8-14 working sets",
-      recoveryNote: "Upper-priority session with shoulder comfort as the limiter."
+      id: "session-1-priority-upper",
+      name: "Session 1 - Priority Upper",
+      status: "completedToday",
+      focus: "Side delts, upper chest, arms, back width support",
+      muscles: ["sideDelts", "upperChest", "chest", "biceps", "triceps", "backWidth"],
+      targetMuscles: ["Side Delts", "Upper Chest", "Chest", "Biceps", "Triceps", "Back Width support"],
+      setRange: "12-18 working sets",
+      recoveryNote: "Reusable priority upper session. Completed manually today, but kept as a template.",
+      recommendedWhen: "First priority upper session of the week.",
+      exercises: [
+        { muscle: "shoulderPrep", exerciseIds: ["dead-hang"], sets: 2, prep: true, note: "Warm-up / Activation." },
+        { muscle: "sideDelts", exerciseIds: ["cable-lateral-raise"], sets: 3 },
+        { muscle: "sideDelts", exerciseIds: ["machine-lateral-raise", "dumbbell-lateral-raise"], sets: 2 },
+        { muscle: "upperChest", exerciseIds: ["low-incline-dumbbell-press", "incline-machine-press", "incline-cable-press"], sets: 2 },
+        { muscle: "chest", exerciseIds: ["flat-dumbbell-press", "incline-machine-press", "incline-cable-press"], sets: 2 },
+        { muscle: "backWidth", exerciseIds: ["cable-lat-prayer", "underhand-grip-pulldown", "neutral-grip-pulldown"], sets: 2, note: "Back width support." },
+        { muscle: "biceps", exerciseIds: ["cable-curl"], sets: 2 },
+        { muscle: "triceps", exerciseIds: ["rope-pushdown", "cross-body-cable-extension"], sets: 2 }
+      ]
     },
     {
-      id: "back-width-biceps",
-      name: "Back Width + Biceps",
+      id: "session-2-back-width-biceps-rear-delts",
+      name: "Session 2 - Back Width + Biceps + Rear Delts",
+      status: "nextRecommended",
+      focus: "Back width, biceps, rear delts",
+      muscles: ["backWidth", "biceps", "rearDelts"],
       targetMuscles: ["Back Width", "Biceps", "Rear Delts"],
-      setRange: "8-14 working sets",
-      recoveryNote: "Lat-first pull session with supported rear delt and arm work."
+      setRange: "10-15 working sets",
+      recoveryNote: "Next recommended session after today's priority upper work unless recovery says otherwise.",
+      recommendedWhen: "Second session of the week after priority upper.",
+      exercises: [
+        { muscle: "shoulderPrep", exerciseIds: ["dead-hang"], sets: 2, prep: true, note: "Warm-up / Activation." },
+        { muscle: "backWidth", exerciseIds: ["underhand-grip-pulldown", "neutral-grip-pulldown"], sets: 3 },
+        { muscle: "backWidth", exerciseIds: ["cable-lat-prayer", "machine-pullover"], sets: 3 },
+        { muscle: "rearDelts", exerciseIds: ["reverse-pec-deck"], sets: 2 },
+        { muscle: "rearDelts", exerciseIds: ["cable-rear-delt-fly"], sets: 2 },
+        { muscle: "biceps", exerciseIds: ["cable-curl"], sets: 2 },
+        { muscle: "biceps", exerciseIds: ["machine-preacher-curl", "hammer-curl"], sets: 2, note: "Bayesian cable curl not in library yet; using closest existing curl option." }
+      ]
     },
     {
-      id: "delt-arm-pump",
-      name: "Delt + Arm Pump",
-      targetMuscles: ["Side Delts", "Biceps", "Triceps"],
+      id: "session-3-legs-maintenance-side-delts",
+      name: "Session 3 - Legs Maintenance + Side Delts",
+      status: "planned",
+      focus: "Legs maintenance with side delt touch-up",
+      muscles: ["legs", "sideDelts"],
+      targetMuscles: ["Legs", "Side Delts", "Calves optional"],
       setRange: "8-13 working sets",
-      recoveryNote: "Lower systemic fatigue, good for cable/machine-biased work."
+      recoveryNote: "Machine-biased lower body with low-cost side delt work.",
+      recommendedWhen: "Use after upper-body priority sessions when legs are due.",
+      exercises: [
+        { muscle: "legs", exerciseIds: ["leg-press", "hack-squat"], sets: 3 },
+        { muscle: "legs", exerciseIds: ["leg-extension"], sets: 2 },
+        { muscle: "legs", exerciseIds: ["seated-hamstring-curl", "lying-hamstring-curl"], sets: 2 },
+        { muscle: "legs", exerciseIds: ["calf-raise"], sets: 2, optional: true },
+        { muscle: "sideDelts", exerciseIds: ["cable-lateral-raise", "machine-lateral-raise"], sets: 3 }
+      ]
     },
     {
-      id: "upper-chest-back-width",
-      name: "Upper Chest + Back Width",
-      targetMuscles: ["Upper Chest", "Back Width", "Side Delts optional"],
-      setRange: "8-15 working sets",
-      recoveryNote: "Alternates pressing and lat work while keeping lower back quiet."
+      id: "session-4-upper-chest-arms-side-delts",
+      name: "Session 4 - Upper Chest + Arms + Side Delts",
+      status: "planned",
+      focus: "Upper chest, side delts, biceps, triceps",
+      muscles: ["upperChest", "sideDelts", "biceps", "triceps"],
+      targetMuscles: ["Upper Chest", "Side Delts", "Biceps", "Triceps"],
+      setRange: "10-16 working sets",
+      recoveryNote: "Pressing and arms with side delt priority still present.",
+      recommendedWhen: "Use later in the week when pressing and arms are ready again.",
+      exercises: [
+        { muscle: "shoulderPrep", exerciseIds: ["dead-hang"], sets: 2, prep: true, note: "Warm-up / Activation." },
+        { muscle: "upperChest", exerciseIds: ["low-incline-dumbbell-press", "incline-machine-press"], sets: 3 },
+        { muscle: "upperChest", exerciseIds: ["incline-cable-press", "flat-dumbbell-press"], sets: 2, note: "Low-to-high cable fly is not in library yet; using incline cable press or flat dumbbell press." },
+        { muscle: "sideDelts", exerciseIds: ["cable-lateral-raise"], sets: 3 },
+        { muscle: "sideDelts", exerciseIds: ["machine-lateral-raise", "dumbbell-lateral-raise"], sets: 2 },
+        { muscle: "biceps", exerciseIds: ["cable-curl", "hammer-curl"], sets: 2 },
+        { muscle: "triceps", exerciseIds: ["rope-pushdown", "cross-body-cable-extension"], sets: 2 }
+      ]
     },
     {
-      id: "leg-maintenance",
-      name: "Leg Maintenance",
-      targetMuscles: ["Legs", "Calves if available", "Side Delts optional"],
-      setRange: "6-11 working sets",
-      recoveryNote: "Machine-based lower-body work with optional low-cost delt volume."
-    },
-    {
-      id: "recovery-friendly-upper",
-      name: "Recovery-Friendly Upper",
-      targetMuscles: ["Upper Chest", "Side Delts", "Back Width"],
+      id: "session-5-optional-back-width-delt-arm-pump",
+      name: "Session 5 - Optional Back Width + Delt/Arm Pump",
+      status: "optional",
+      focus: "Back width, side delt, and short arm pump if recovery is good",
+      muscles: ["backWidth", "sideDelts", "biceps", "triceps"],
+      targetMuscles: ["Back Width", "Side Delts", "Biceps", "Triceps optional"],
       setRange: "7-12 working sets",
-      recoveryNote: "Machines and cables preferred; avoid chasing load when joints feel off."
+      recoveryNote: "Optional pump session only when recovery is good.",
+      recommendedWhen: "Use only if soreness, joints, and fatigue are all acceptable.",
+      exercises: [
+        { muscle: "shoulderPrep", exerciseIds: ["dead-hang"], sets: 2, prep: true, note: "Warm-up / Activation." },
+        { muscle: "backWidth", exerciseIds: ["neutral-grip-pulldown", "underhand-grip-pulldown"], sets: 2 },
+        { muscle: "backWidth", exerciseIds: ["cable-lat-prayer"], sets: 2 },
+        { muscle: "sideDelts", exerciseIds: ["cable-lateral-raise", "machine-lateral-raise"], sets: 3 },
+        { muscle: "biceps", exerciseIds: ["cable-curl"], sets: 1 },
+        { muscle: "triceps", exerciseIds: ["rope-pushdown", "cross-body-cable-extension"], sets: 1, optional: true }
+      ]
     }
   ];
 
@@ -853,8 +909,78 @@
     exercisePreferences: exercisePreferences,
     goalPresets: goalPresets,
     sessionTemplates: sessionTemplates,
+    plannedWeek: {
+      weekStartDate: null,
+      currentWeekNumber: 1,
+      currentWeekSessionIndex: 2,
+      completedSessionTemplateIds: ["session-1-priority-upper"],
+      sessions: [
+        {
+          sessionNumber: 1,
+          templateId: "session-1-priority-upper",
+          name: "Session 1 - Priority Upper",
+          status: "completed",
+          plannedDate: null,
+          completedAt: null,
+          skippedAt: null
+        },
+        {
+          sessionNumber: 2,
+          templateId: "session-2-back-width-biceps-rear-delts",
+          name: "Session 2 - Back Width + Biceps + Rear Delts",
+          status: "current",
+          plannedDate: null,
+          completedAt: null,
+          skippedAt: null
+        },
+        {
+          sessionNumber: 3,
+          templateId: "session-3-legs-maintenance-side-delts",
+          name: "Session 3 - Legs Maintenance + Side Delts",
+          status: "planned",
+          plannedDate: null,
+          completedAt: null,
+          skippedAt: null
+        },
+        {
+          sessionNumber: 4,
+          templateId: "session-4-upper-chest-arms-side-delts",
+          name: "Session 4 - Upper Chest + Arms + Side Delts",
+          status: "planned",
+          plannedDate: null,
+          completedAt: null,
+          skippedAt: null
+        },
+        {
+          sessionNumber: 5,
+          templateId: "session-5-optional-back-width-delt-arm-pump",
+          name: "Session 5 - Optional Back Width + Delt/Arm Pump",
+          status: "optional",
+          plannedDate: null,
+          completedAt: null,
+          skippedAt: null
+        }
+      ]
+    },
+    nonHypertrophyTraining: {
+      categories: [
+        { id: "functional-training", name: "Functional Training", countsTowardHypertrophyVolume: false },
+        { id: "loaded-mobility", name: "Loaded Mobility", countsTowardHypertrophyVolume: false },
+        { id: "warm-up-activation", name: "Warm-up / Activation", countsTowardHypertrophyVolume: false },
+        { id: "stretching", name: "Stretching", countsTowardHypertrophyVolume: false },
+        { id: "movement-practice-tai-chi", name: "Movement Practice / Tai Chi", countsTowardHypertrophyVolume: false }
+      ]
+    },
+    recoveryResponseFields: {
+      pumpRating: null,
+      sorenessRating: null,
+      jointPainFlags: [],
+      recoveredOnTime: null,
+      keepOrSwapExerciseNote: "",
+      postExerciseNotes: ""
+    },
     activeGoalPreset: "cyprus-visual-phase",
-    selectedSessionTemplate: "",
+    selectedSessionTemplate: "session-2-back-width-biceps-rear-delts",
     placeholderWorkout: [
       { muscle: "Upper chest", exercise: "Incline machine press", sets: 2 },
       { muscle: "Side delts", exercise: "Cable lateral raise", sets: 3 },

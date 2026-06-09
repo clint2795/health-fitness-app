@@ -563,6 +563,179 @@
     return label || sessionTemplates[getTemplateIndex()].title;
   }
 
+  function getLibraryExerciseById(state, exerciseId) {
+    return (state.exerciseLibrary || []).find(function (exercise) {
+      return exercise.id === exerciseId;
+    });
+  }
+
+  function getSelectedSessionTemplate(state) {
+    if (!state || !state.selectedSessionTemplate) {
+      return null;
+    }
+
+    return (state.sessionTemplates || []).find(function (template) {
+      return template.id === state.selectedSessionTemplate;
+    }) || null;
+  }
+
+  function getTemplateSessionNumber(state, templateId) {
+    var index = (state.sessionTemplates || []).findIndex(function (template) {
+      return template.id === templateId;
+    });
+
+    return index === -1 ? null : index + 1;
+  }
+
+  function getNextPlannedSessionTemplate(state) {
+    var templates = state.sessionTemplates || [];
+    var plannedWeek = state.plannedWeek || {};
+    var sessions = plannedWeek.sessions || [];
+    var currentSession = sessions.find(function (session) {
+      return session.status === "current";
+    });
+    var nextSession;
+
+    if (!currentSession) {
+      currentSession = sessions.find(function (session) {
+        return session.status !== "completed" && session.status !== "skipped" && session.status !== "optional";
+      });
+    }
+
+    if (!currentSession) {
+      currentSession = sessions.find(function (session) {
+        return session.status === "optional";
+      });
+    }
+
+    if (currentSession) {
+      return templates.find(function (template) {
+        return template.id === currentSession.templateId;
+      }) || null;
+    }
+
+    nextSession = (plannedWeek.completedSessionTemplateIds || []).length;
+    return templates[nextSession] || null;
+  }
+
+  function getPlannedWeekSessions(state) {
+    var plannedWeek = state.plannedWeek || {};
+    var sessions = plannedWeek.sessions || [];
+
+    return (state.sessionTemplates || []).map(function (template, index) {
+      var sessionNumber = index + 1;
+      var plannedSession = sessions.find(function (session) {
+        return session.templateId === template.id;
+      }) || {};
+      var status = "Planned";
+
+      if (plannedSession.status === "completed") {
+        status = "Completed";
+      } else if (plannedSession.status === "current") {
+        status = template.status === "optional" ? "Optional / Current" : "Current / Next";
+      } else if (plannedSession.status === "skipped") {
+        status = "Skipped";
+      } else if (plannedSession.status === "optional" || template.status === "optional") {
+        status = "Optional";
+      }
+
+      return {
+        id: template.id,
+        templateId: template.id,
+        sessionNumber: sessionNumber,
+        name: template.name,
+        focus: template.focus,
+        status: status,
+        plannedDate: plannedSession.plannedDate || null,
+        completedAt: plannedSession.completedAt || null,
+        skippedAt: plannedSession.skippedAt || null
+      };
+    });
+  }
+
+  function selectTemplateExercise(state, templateExercise) {
+    var ids = templateExercise.exerciseIds || [];
+    var fallback = null;
+    var index;
+    var exercise;
+
+    for (index = 0; index < ids.length; index += 1) {
+      exercise = getLibraryExerciseById(state, ids[index]);
+
+      if (!exercise) {
+        continue;
+      }
+
+      if (!fallback && exercise.status !== "avoid") {
+        fallback = exercise;
+      }
+
+      if (passesInjuryRules(exercise, state)) {
+        return exercise;
+      }
+    }
+
+    return fallback || (ids.length ? getLibraryExerciseById(state, ids[0]) : null);
+  }
+
+  function createPlannedTemplateExercise(state, templateExercise, targetRir) {
+    var exercise = selectTemplateExercise(state, templateExercise);
+    var notes;
+
+    if (!exercise) {
+      return null;
+    }
+
+    notes = templateExercise.note || exercise.notes;
+
+    return {
+      exerciseId: exercise.id,
+      name: exercise.name,
+      primaryMuscle: templateExercise.muscle,
+      plannedSets: Number(templateExercise.sets) || 1,
+      repRange: exercise.repRange,
+      targetRir: templateExercise.prep ? null : targetRir,
+      status: exercise.status,
+      notes: notes,
+      loggedSets: []
+    };
+  }
+
+  function generateSessionFromTemplate(state, template, weeklyVolume, remainingInfo) {
+    var targetRir = getRirTarget(state);
+    var plannedItems = (template.exercises || []).map(function (templateExercise) {
+      return createPlannedTemplateExercise(state, templateExercise, targetRir);
+    }).filter(Boolean);
+    var prep = plannedItems.filter(function (exercise) {
+      return normalizeMuscle(exercise.primaryMuscle) === "shoulderPrep" || exercise.status === "prep";
+    });
+    var exercises = plannedItems.filter(function (exercise) {
+      return normalizeMuscle(exercise.primaryMuscle) !== "shoulderPrep" && exercise.status !== "prep";
+    });
+    var muscles = (template.muscles || exercises.map(function (exercise) {
+      return normalizeMuscle(exercise.primaryMuscle);
+    })).filter(function (muscle, index, list) {
+      return list.indexOf(muscle) === index;
+    });
+
+    return {
+      id: "session-" + getTodayDate() + "-" + template.id,
+      date: getTodayDate(),
+      title: template.name,
+      sessionNumber: getTemplateSessionNumber(state, template.id),
+      mesocycleWeek: Number(state.mesocycleSettings.currentWeek),
+      targetRir: targetRir,
+      muscles: muscles,
+      status: "planned",
+      prep: prep,
+      exercises: capSessionVolume(exercises),
+      weeklyVolume: weeklyVolume,
+      remainingWeeklySets: remainingInfo,
+      why: template.recommendedWhen || template.recoveryNote || "Selected from the preloaded session template pack.",
+      templateId: template.id
+    };
+  }
+
   function getWhyText(muscles, remainingInfo, state) {
     var lead = muscles.slice(0, 2).map(getMuscleLabel).join(" and ");
     var notes = [];
@@ -592,6 +765,7 @@
     var history = window.TrainingStorage ? window.TrainingStorage.getWorkoutHistory() : [];
     var weeklyVolume = calculateWeeklyVolume(history);
     var remainingInfo = calculateRemainingWeeklySets(state, weeklyVolume);
+    var selectedTemplate = getNextPlannedSessionTemplate(state) || getSelectedSessionTemplate(state);
     var selectedMuscles = selectMusclesForToday(remainingInfo, history);
     var targetRir = getRirTarget(state);
     var exercises = [];
@@ -603,6 +777,10 @@
     }).filter(function (item) {
       return item.sets > 0;
     });
+
+    if (selectedTemplate) {
+      return generateSessionFromTemplate(state, selectedTemplate, weeklyVolume, remainingInfo);
+    }
 
     planned = balancePlannedVolume(planned);
 
@@ -677,6 +855,8 @@
     passesInjuryRules: passesInjuryRules,
     getCandidateExercises: getCandidateExercises,
     calculateWeeklyVolume: calculateWeeklyVolume,
-    calculateRemainingWeeklySets: calculateRemainingWeeklySets
+    calculateRemainingWeeklySets: calculateRemainingWeeklySets,
+    getPlannedWeekSessions: getPlannedWeekSessions,
+    getNextPlannedSessionTemplate: getNextPlannedSessionTemplate
   };
 })();
