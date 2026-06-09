@@ -134,6 +134,14 @@
     );
   }
 
+  function getSessionMetaMarkup(session) {
+    return (
+      '<span class="workout-meta-item">' + escapeHtml(session.date || "Today") + '</span>' +
+      '<span class="workout-meta-item">' + escapeHtml(session.targetRir || "RIR target") + '</span>' +
+      '<span class="workout-meta-item">' + escapeHtml((session.muscles || []).map(getMuscleLabel).join(", ")) + '</span>'
+    );
+  }
+
   function formatFriendliness(value) {
     if (value === true) return "yes";
     if (value === false) return "no";
@@ -308,6 +316,7 @@
       var savedClass = isSetCompleted(set) ? " saved" : "";
       var skippedClass = set.skipped ? " skipped" : "";
       var activeClass = !locked && setIndex === activeSetIndex ? " active-set" : "";
+      var futureClass = !locked && !savedClass && !skippedClass && setIndex !== activeSetIndex ? " future-set" : "";
       var savedLabel = set.skipped ? "Skipped" : (isSetCompleted(set) ? "Logged" : "Not logged");
       var disabledAttribute = locked ? " disabled" : "";
       var skipButton = set.skipped
@@ -316,13 +325,13 @@
       var removeButton = '<button class="button set-secondary-button remove-set-button" type="button" data-remove-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Remove</button>';
 
       return (
-        '<div class="workout-set-row' + savedClass + skippedClass + activeClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
+        '<div class="workout-set-row' + savedClass + skippedClass + activeClass + futureClass + '" data-exercise-index="' + exerciseIndex + '" data-set-index="' + setIndex + '">' +
           '<div class="set-row-header"><strong>Set ' + (setIndex + 1) + ' of ' + exercise.loggedSets.length + '</strong><span class="saved-label">' + savedLabel + '</span></div>' +
           '<label>Weight<input type="number" inputmode="decimal" data-field="weightKg" value="' + escapeHtml(getSetValue(set, "weightKg")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Reps<input type="number" inputmode="numeric" data-field="reps" value="' + escapeHtml(getSetValue(set, "reps")) + '" placeholder="0"' + disabledAttribute + '></label>' +
           '<label>Actual RIR<input type="number" inputmode="numeric" data-field="actualRir" value="' + escapeHtml(getSetValue(set, "actualRir")) + '" placeholder="' + escapeHtml(exercise.targetRir || "") + '"' + disabledAttribute + '></label>' +
           '<div class="set-button-row">' +
-            '<button class="button button-primary save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Log Set</button>' +
+            '<button class="button button-primary save-set-button" type="button" data-save-set="' + exerciseIndex + ':' + setIndex + '" data-log-set="' + exerciseIndex + ':' + setIndex + '"' + disabledAttribute + '>Log Set</button>' +
             '<div class="set-secondary-actions">' + skipButton + removeButton + '</div>' +
           '</div>' +
         '</div>'
@@ -379,6 +388,7 @@
     var week = document.querySelector("#workout-session-week");
     var meta = document.querySelector("#workout-session-meta");
     var finishButton = document.querySelector("#finish-workout-button");
+    var sessionHero = title && title.closest ? title.closest(".card") : null;
 
     if (!session || !container) {
       return;
@@ -387,7 +397,11 @@
     if (title) title.textContent = session.title;
     if (week) week.textContent = "Week " + session.mesocycleWeek;
     if (meta) {
-      meta.textContent = session.date + " - " + session.targetRir + " - " + session.muscles.map(getMuscleLabel).join(", ");
+      meta.innerHTML = getSessionMetaMarkup(session);
+    }
+
+    if (sessionHero && sessionHero.classList) {
+      sessionHero.classList.add("workout-session-hero");
     }
 
     if (finishButton && finishButton.classList) {
@@ -410,7 +424,7 @@
       return (
         '<article class="card workout-exercise-card' + lockedClass + skippedClass + currentClass + '" data-exercise-card="' + index + '">' +
           '<div class="card-header workout-card-header">' +
-            '<div>' +
+            '<div class="workout-exercise-title-block">' +
               currentLabel +
               '<h2>' + escapeHtml(exercise.name) + '</h2>' +
               '<p class="subtle">' + escapeHtml(getMuscleLabel(exercise.primaryMuscle)) + ' - ' + escapeHtml(exercise.repRange) + ' - ' + escapeHtml(exercise.targetRir) + '</p>' +
@@ -424,7 +438,7 @@
           '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' +
           getInlineChangePanelMarkup(index, exercise) +
           getProgressMarkup(exercise) +
-          createSetInputs(index, exercise) +
+          '<div class="workout-set-stack">' + createSetInputs(index, exercise) + '</div>' +
           getExerciseActionsMarkup(index, exercise) +
         '</article>'
       );

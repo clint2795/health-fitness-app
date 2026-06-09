@@ -1,23 +1,26 @@
 :root {
-  --background: #050608;
-  --surface: #0b0f14;
-  --surface-raised: #0d1117;
+  --background: #020303;
+  --surface: #080b0e;
+  --surface-raised: #0d1115;
   --surface-soft: #111820;
-  --text: #f3f7fb;
-  --muted: #9ca7b3;
-  --border: #242b34;
-  --primary: #3f779b;
-  --primary-dark: #285c7b;
-  --primary-soft: #0f2230;
-  --success: #5fa87a;
-  --success-soft: #132d20;
-  --warning: #f0b84f;
-  --warning-soft: #423113;
-  --danger: #ef6b6b;
-  --danger-soft: #451d22;
-  --radius: 8px;
-  --radius-sm: 5px;
-  --shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+  --text: #f3f6f7;
+  --muted: #a3adb4;
+  --border: #20272f;
+  --border-soft: rgba(204, 219, 228, 0.1);
+  --border-strong: rgba(204, 219, 228, 0.24);
+  --primary: #2e7ea6;
+  --primary-dark: #123f58;
+  --primary-bright: #55a6d2;
+  --primary-soft: #0b2230;
+  --success: #5f9f74;
+  --success-soft: #102619;
+  --warning: #b7833d;
+  --warning-soft: #2f2413;
+  --danger: #ad4f52;
+  --danger-soft: #351719;
+  --radius: 7px;
+  --radius-sm: 3px;
+  --shadow: 0 18px 52px rgba(0, 0, 0, 0.48);
   --tap-target: 3.25rem;
 }
 
@@ -38,7 +41,8 @@ body {
   padding-bottom: 5rem;
   color: var(--text);
   background:
-    radial-gradient(circle at top, rgba(75, 143, 189, 0.06), transparent 22rem),
+    linear-gradient(135deg, rgba(46, 126, 166, 0.09), transparent 24rem),
+    radial-gradient(circle at 90% -8%, rgba(85, 166, 210, 0.08), transparent 17rem),
     var(--background);
   line-height: 1.5;
   overflow-x: hidden;
@@ -59,8 +63,9 @@ p {
 
 h1 {
   margin-bottom: 0.2rem;
-  font-size: 2rem;
-  line-height: 1.1;
+  font-size: 1.82rem;
+  line-height: 1.12;
+  font-weight: 860;
 }
 
 h2 {
@@ -95,10 +100,12 @@ a {
 }
 
 .card {
-  padding: 0.85rem;
+  padding: 0.9rem;
   margin-bottom: 0.75rem;
-  background: linear-gradient(180deg, var(--surface-raised), var(--surface));
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(135deg, rgba(46, 126, 166, 0.06), transparent 34%),
+    linear-gradient(180deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
@@ -126,10 +133,10 @@ a {
   padding: 0.25rem 0.55rem;
   color: var(--text);
   background: var(--surface-soft);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 780;
   line-height: 1.1;
   text-transform: capitalize;
   white-space: nowrap;
@@ -151,20 +158,20 @@ a {
   padding: 0.75rem 0.9rem;
   color: var(--text);
   text-decoration: none;
-  background: var(--surface-soft);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #111820, #090d11);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   font: inherit;
   font-size: 1.05rem;
-  font-weight: 850;
+  font-weight: 830;
   cursor: pointer;
   transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
 
 .button:hover,
 .button:focus-visible {
-  background: #171f29;
-  border-color: var(--primary);
+  background: #131c23;
+  border-color: rgba(85, 166, 210, 0.44);
 }
 
 .button:active {
@@ -172,14 +179,15 @@ a {
 }
 
 .button-primary {
-  color: #f6fbff;
+  color: #ffffff;
   background: linear-gradient(180deg, var(--primary), var(--primary-dark));
-  border-color: #4b83a8;
+  border-color: rgba(85, 166, 210, 0.44);
+  box-shadow: 0 14px 38px rgba(20, 74, 102, 0.34);
 }
 
 .button-primary:hover,
 .button-primary:focus-visible {
-  background: #397fae;
+  background: linear-gradient(180deg, #358cb8, #174a65);
 }
 
 .button-row {
@@ -216,8 +224,8 @@ a {
 .stats-list div,
 .volume-item {
   padding: 0.75rem;
-  background: #0d1319;
-  border: 1px solid var(--border);
+  background: #0b1014;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
@@ -235,8 +243,8 @@ dd {
 }
 
 .warning-card {
-  background: linear-gradient(180deg, #15120d, #0d0e0e);
-  border-color: #5d4720;
+  background: linear-gradient(180deg, #151108, #090a0b);
+  border-color: rgba(183, 131, 61, 0.38);
 }
 
 .plain-list {
@@ -275,8 +283,8 @@ dd {
 
 .debug-block {
   padding: 0.85rem;
-  background: #080b0f;
-  border: 1px solid var(--border);
+  background: #06090c;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
@@ -310,8 +318,8 @@ textarea {
   min-height: var(--tap-target);
   padding: 0.7rem 0.8rem;
   color: var(--text);
-  background: #0c1219;
-  border: 1px solid var(--border);
+  background: #030405;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   font: inherit;
   font-size: 1.05rem;
@@ -327,13 +335,13 @@ textarea:focus-visible,
 button:focus-visible,
 a:focus-visible,
 summary:focus-visible {
-  outline: 3px solid rgba(79, 159, 216, 0.6);
+  outline: 3px solid rgba(85, 166, 210, 0.55);
   outline-offset: 2px;
 }
 
 input[readonly] {
   color: var(--muted);
-  background: #0c1117;
+  background: #070a0d;
 }
 
 input:disabled,
@@ -358,8 +366,8 @@ input[type="checkbox"] {
   gap: 0.85rem;
   min-height: var(--tap-target);
   padding: 0.7rem;
-  background: #0d1319;
-  border: 1px solid var(--border);
+  background: #0b1014;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
@@ -376,8 +384,8 @@ input[type="checkbox"] {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: #0d1319;
-  border: 1px solid var(--border);
+  background: #0b1014;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
@@ -393,8 +401,8 @@ input[type="checkbox"] {
 .recommendation-card,
 .recommendation-muscle {
   padding: 0.85rem;
-  background: #0d1319;
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #0d1115, #080b0e);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
@@ -424,43 +432,43 @@ input[type="checkbox"] {
 }
 
 .template-card.selected {
-  border-color: var(--primary);
-  background: linear-gradient(180deg, #0d1720, var(--surface));
+  border-color: rgba(85, 166, 210, 0.46);
+  background: linear-gradient(180deg, rgba(46, 126, 166, 0.16), var(--surface));
 }
 
 .exercise-group {
   display: grid;
   gap: 0.65rem;
   padding-top: 0.35rem;
-  border-top: 1px solid #222a33;
+  border-top: 1px solid var(--border-soft);
 }
 
 .exercise-group > h2 {
   margin: 0.2rem 0 0;
   padding: 0.55rem 0.65rem;
   color: var(--text);
-  background: #080c11;
-  border: 1px solid var(--border);
+  background: #06090c;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   font-size: 1.05rem;
 }
 
 .exercise-card {
-  background: var(--surface-soft);
+  background: linear-gradient(180deg, #111820, #090d11);
 }
 
 .exercise-row {
   display: grid;
   gap: 0.55rem;
   padding: 0.7rem;
-  background: #0d1319;
-  border: 1px solid var(--border);
+  background: #0b1014;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
 .exercise-row.exercise-risk-muted {
-  background: #0b0e12;
-  border-color: #393633;
+  background: #090b0d;
+  border-color: rgba(183, 131, 61, 0.28);
 }
 
 .exercise-row-summary {
@@ -513,8 +521,8 @@ input[type="checkbox"] {
 
 .compact-details div {
   padding: 0.65rem;
-  background: #080c11;
-  border: 1px solid var(--border);
+  background: #06090c;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
@@ -522,8 +530,8 @@ input[type="checkbox"] {
   margin: 0;
   padding: 0.6rem;
   color: #fff0d0;
-  background: rgba(66, 49, 19, 0.55);
-  border: 1px solid #735725;
+  background: rgba(47, 36, 19, 0.78);
+  border: 1px solid rgba(183, 131, 61, 0.42);
   border-radius: var(--radius-sm);
 }
 
@@ -532,7 +540,7 @@ input[type="checkbox"] {
 .signal-add {
   color: #d8f0e1;
   background: var(--success-soft);
-  border-color: #356f50;
+  border-color: rgba(95, 159, 116, 0.42);
 }
 
 .status-neutral,
@@ -540,61 +548,146 @@ input[type="checkbox"] {
 .signal-hold {
   color: #dcedff;
   background: var(--primary-soft);
-  border-color: #315f83;
+  border-color: rgba(85, 166, 210, 0.34);
 }
 
 .status-avoid,
 .signal-reduce {
   color: #ffe3e3;
   background: var(--danger-soft);
-  border-color: #8f3b44;
+  border-color: rgba(173, 79, 82, 0.48);
 }
 
 .status-prep {
   color: #dcedff;
   background: var(--primary-soft);
-  border-color: #315f83;
+  border-color: rgba(85, 166, 210, 0.34);
 }
 
 .status-conditional,
 .status-behind {
   color: #fff0d0;
   background: var(--warning-soft);
-  border-color: #8a6728;
+  border-color: rgba(183, 131, 61, 0.48);
 }
 
 .workout-exercise-card {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.8rem;
   overflow: hidden;
+}
+
+body[data-page="workout"] .app-header {
+  padding-bottom: 0.35rem;
+}
+
+body[data-page="workout"] .app-header h1 {
+  font-size: 1.52rem;
+}
+
+.workout-session-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+  background:
+    linear-gradient(135deg, rgba(46, 126, 166, 0.18), transparent 34%),
+    linear-gradient(180deg, #111820, #050708);
+  border-color: rgba(85, 166, 210, 0.26);
+  box-shadow: 0 24px 68px rgba(0, 0, 0, 0.58);
+}
+
+.workout-session-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, black, transparent 78%);
+  pointer-events: none;
+}
+
+.workout-session-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.workout-session-hero .card-header {
+  align-items: flex-start;
+}
+
+.workout-session-hero h2 {
+  margin-bottom: 0.2rem;
+  color: #ffffff;
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+
+#workout-session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0;
+}
+
+.workout-meta-item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.8rem;
+  padding: 0.25rem 0.45rem;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(204, 219, 228, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 760;
 }
 
 .workout-exercise-card.current-exercise-card {
   position: relative;
-  border-color: #3c6682;
-  box-shadow: inset 3px 0 0 var(--primary), var(--shadow);
-  background: linear-gradient(180deg, #0d1117, #080b0f);
+  border-color: rgba(85, 166, 210, 0.42);
+  box-shadow: inset 3px 0 0 var(--primary-bright), 0 22px 64px rgba(0, 0, 0, 0.56);
+  background:
+    linear-gradient(135deg, rgba(46, 126, 166, 0.12), transparent 34%),
+    linear-gradient(180deg, #101720, #050708);
+}
+
+.workout-exercise-card:not(.current-exercise-card) {
+  background: linear-gradient(180deg, #0c1115, #06090b);
+  border-color: rgba(204, 219, 228, 0.08);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.32);
+}
+
+.workout-exercise-card:not(.current-exercise-card) .workout-set-row:not(.saved):not(.skipped) {
+  opacity: 0.82;
 }
 
 .workout-exercise-card.completed-exercise {
-  border-color: #343b45;
-  background: linear-gradient(180deg, #0a0d11, #090c10);
+  border-color: rgba(204, 219, 228, 0.12);
+  background: linear-gradient(180deg, #090d11, #07090b);
   opacity: 0.88;
 }
 
 .workout-exercise-card.skipped-exercise {
-  border-color: #5f4b25;
-  background: linear-gradient(180deg, #11100d, #090c10);
+  border-color: rgba(183, 131, 61, 0.34);
+  background: linear-gradient(180deg, #111008, #07090b);
 }
 
 .workout-exercise-card h2 {
-  font-size: 1.25rem;
+  font-size: 1.34rem;
+  line-height: 1.12;
 }
 
 .workout-card-header {
   align-items: flex-start;
-  padding: 0.15rem 0 0.65rem;
-  border-bottom: 1px solid #1c232b;
+  gap: 0.85rem;
+  padding: 0.05rem 0 0.75rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.workout-exercise-title-block {
+  min-width: 0;
 }
 
 .workout-header-actions {
@@ -609,22 +702,27 @@ input[type="checkbox"] {
   min-width: 6.25rem;
   min-height: 2.6rem;
   padding: 0.5rem 0.7rem;
-  font-size: 1rem;
+  font-size: 0.96rem;
 }
 
 .current-exercise-label {
-  margin-bottom: 0.25rem;
-  color: #8ea7ba;
-  font-size: 0.95rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.45rem;
+  margin: 0 0 0.35rem;
+  padding-left: 0.55rem;
+  border-left: 2px solid var(--primary-bright);
+  color: var(--primary-bright);
+  font-size: 0.74rem;
+  font-weight: 820;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .set-progress {
   display: grid;
-  gap: 0.25rem;
-  padding: 0.35rem 0;
+  gap: 0.35rem;
+  padding: 0.45rem 0 0.2rem;
   background: transparent;
   border: 0;
   border-radius: var(--radius-sm);
@@ -632,64 +730,76 @@ input[type="checkbox"] {
 
 .set-progress-text {
   color: var(--text);
-  font-size: 1rem;
-  font-weight: 850;
+  font-size: 0.9rem;
+  font-weight: 830;
 }
 
 .set-progress-bar {
-  height: 0.28rem;
+  height: 0.34rem;
   overflow: hidden;
   background: #030405;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
 .set-progress-bar span {
   display: block;
   height: 100%;
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--primary-bright), var(--primary));
+  box-shadow: 0 0 16px rgba(46, 126, 166, 0.36);
 }
 
 .workout-set-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.55rem;
-  padding: 0.8rem;
-  background: #06090d;
-  border: 1px solid #253544;
+  padding: 0.82rem;
+  background: #030405;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
+}
+
+.workout-set-stack {
+  display: grid;
+  gap: 0.62rem;
 }
 
 .workout-set-row.saved {
   color: #c1cad3;
-  background: #05080b;
-  border-color: #202832;
+  background: #050708;
+  border-color: rgba(204, 219, 228, 0.1);
   opacity: 0.68;
+}
+
+.workout-set-row.future-set {
+  background: #06080a;
+  border-color: rgba(204, 219, 228, 0.1);
+  opacity: 0.78;
 }
 
 .workout-set-row.saved input {
   color: #8f9aa5;
-  background: #060a0e;
-  border-color: #18202a;
+  background: #050708;
+  border-color: rgba(204, 219, 228, 0.08);
 }
 
 .workout-set-row.active-set {
-  background: linear-gradient(180deg, rgba(63, 119, 155, 0.08), transparent 45%), #06090d;
-  border-color: #253544;
-  box-shadow: none;
+  background: linear-gradient(180deg, rgba(46, 126, 166, 0.13), transparent 50%), #030405;
+  border-color: rgba(85, 166, 210, 0.36);
+  box-shadow: inset 2px 0 0 var(--primary-bright), 0 12px 34px rgba(0, 0, 0, 0.32);
   opacity: 1;
 }
 
 .workout-set-row.skipped {
   color: #d0c5b0;
-  background: #100f0c;
-  border-color: #5f4b25;
+  background: #100d08;
+  border-color: rgba(183, 131, 61, 0.38);
   opacity: 0.88;
 }
 
 .workout-set-row:focus-within {
-  background: #0d1319;
-  border-color: #4b83a8;
+  background: #0b1014;
+  border-color: rgba(85, 166, 210, 0.52);
   opacity: 1;
 }
 
@@ -700,7 +810,7 @@ input[type="checkbox"] {
   justify-content: space-between;
   gap: 0.55rem;
   color: var(--text);
-  font-size: 1rem;
+  font-size: 0.94rem;
 }
 
 .logged-set-summary {
@@ -717,34 +827,38 @@ input[type="checkbox"] {
   min-height: 1.9rem;
   padding: 0.2rem 0.55rem;
   color: var(--muted);
-  background: #0d1319;
-  border: 1px solid var(--border);
+  background: #0b1014;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   font-size: 1rem;
-  font-weight: 850;
+  font-weight: 820;
 }
 
 .workout-set-row.saved .saved-label {
   color: #c1cad3;
-  background: #10151b;
-  border-color: #303741;
+  background: #0b1014;
+  border-color: rgba(204, 219, 228, 0.12);
 }
 
 .workout-set-row.skipped .saved-label {
   color: #fff0d0;
   background: var(--warning-soft);
-  border-color: #8a6728;
+  border-color: rgba(183, 131, 61, 0.48);
 }
 
 .workout-set-row label {
-  font-size: 1rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 760;
 }
 
 .workout-set-row input {
-  min-height: 2.45rem;
-  padding: 0.45rem 0.5rem;
-  font-size: 1.05rem;
-  font-weight: 800;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.5rem;
+  border-color: rgba(204, 219, 228, 0.22);
+  color: #ffffff;
+  font-size: 1.12rem;
+  font-weight: 820;
   text-align: center;
 }
 
@@ -756,8 +870,13 @@ input[type="checkbox"] {
 }
 
 .workout-set-row .button {
-  min-height: 2.7rem;
+  min-height: 2.85rem;
   padding-block: 0.55rem;
+}
+
+.workout-set-row .save-set-button {
+  border-color: rgba(85, 166, 210, 0.48);
+  box-shadow: 0 12px 30px rgba(20, 74, 102, 0.28);
 }
 
 .set-secondary-actions {
@@ -771,23 +890,23 @@ input[type="checkbox"] {
   min-height: 2.35rem;
   padding: 0.45rem 0.55rem;
   color: var(--muted);
-  background: #0a0e13;
-  border-color: #202832;
+  background: #070a0d;
+  border-color: rgba(204, 219, 228, 0.1);
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 780;
 }
 
 .workout-set-row.saved .save-set-button {
   color: #aeb7c1;
-  background: #0a0e13;
-  border-color: #202832;
+  background: #070a0d;
+  border-color: rgba(204, 219, 228, 0.1);
 }
 
 .exercise-actions {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.55rem;
-  padding-top: 0.35rem;
+  padding-top: 0.45rem;
 }
 
 .exercise-secondary-actions {
@@ -796,12 +915,16 @@ input[type="checkbox"] {
   gap: 0.45rem;
 }
 
+.complete-exercise-button {
+  min-height: 3rem;
+}
+
 .substitution-note {
   margin: 0;
   padding: 0.8rem;
   color: #fff0d0;
   background: var(--warning-soft);
-  border: 1px solid #8a6728;
+  border: 1px solid rgba(183, 131, 61, 0.48);
   border-radius: var(--radius-sm);
 }
 
@@ -820,7 +943,7 @@ input[type="checkbox"] {
   display: grid;
   align-items: end;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(0, 0, 0, 0.78);
 }
 
 .exercise-modal-card {
@@ -831,16 +954,16 @@ input[type="checkbox"] {
   margin: 0 auto;
   padding: 1rem;
   overflow: auto;
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #10161b, #050708);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: 0 28px 86px rgba(0, 0, 0, 0.72);
 }
 
 .exercise-actions.completed {
   padding: 0.7rem;
-  background: #090d11;
-  border: 1px solid #303741;
+  background: #070a0d;
+  border: 1px solid rgba(204, 219, 228, 0.14);
   border-radius: var(--radius-sm);
 }
 
@@ -851,8 +974,8 @@ input[type="checkbox"] {
 }
 
 .skipped-exercise-actions {
-  background: #100f0c;
-  border-color: #5f4b25;
+  background: #100d08;
+  border-color: rgba(183, 131, 61, 0.38);
 }
 
 .feedback-section[hidden] {
@@ -879,8 +1002,8 @@ input[type="checkbox"] {
 .history-details div,
 .recommendation-sets div {
   padding: 0.85rem;
-  background: #080c11;
-  border: 1px solid var(--border);
+  background: #06090c;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
 }
 
@@ -888,14 +1011,14 @@ input[type="checkbox"] {
   padding: 0.85rem;
   color: #dff8ea;
   background: var(--success-soft);
-  border: 1px solid #2f865d;
+  border: 1px solid rgba(95, 159, 116, 0.46);
   border-radius: var(--radius-sm);
 }
 
 .recommendation-muscle {
   display: grid;
   gap: 0.85rem;
-  background: #0d1319;
+  background: linear-gradient(180deg, #0d1115, #080b0e);
 }
 
 .recommendation-sets {
@@ -919,9 +1042,10 @@ input[type="checkbox"] {
   z-index: 10;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  background: rgba(5, 6, 8, 0.98);
-  border-top: 1px solid var(--border);
-  backdrop-filter: blur(12px);
+  background: rgba(3, 4, 5, 0.96);
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -18px 44px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(14px);
 }
 
 .bottom-nav a {
@@ -933,14 +1057,14 @@ input[type="checkbox"] {
   color: var(--muted);
   text-align: center;
   text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 850;
+  font-size: 0.9rem;
+  font-weight: 820;
 }
 
 .bottom-nav a.active {
   color: #ffffff;
-  background: linear-gradient(180deg, rgba(63, 119, 155, 0.16), rgba(63, 119, 155, 0.04));
-  box-shadow: inset 0 3px 0 var(--primary);
+  background: linear-gradient(180deg, rgba(46, 126, 166, 0.18), rgba(46, 126, 166, 0.04));
+  box-shadow: inset 0 3px 0 var(--primary-bright);
 }
 
 @media (max-width: 23rem) {
@@ -979,7 +1103,7 @@ input[type="checkbox"] {
     bottom: auto;
     width: min(100%, 46rem);
     margin: 0 auto 0.75rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-soft);
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
 

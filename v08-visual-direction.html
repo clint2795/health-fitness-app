@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>v08 Visual Direction Prototype</title>
+    <link rel="stylesheet" href="css/v08-visual-direction.css">
+  </head>
+  <body>
+    <main class="app-frame" aria-label="v08 visual direction prototype">
+      <header class="app-top">
+        <div>
+          <span class="phase-label">Cyprus Visual Phase</span>
+          <h1>Recovery-aware hypertrophy, built for the next set.</h1>
+        </div>
+        <div class="readiness-gauge">
+          <strong>72</strong>
+          <span>ready</span>
+        </div>
+      </header>
+
+      <section class="session-hero" aria-labelledby="today-title">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <span class="section-kicker">Today</span>
+            <h2 id="today-title">Session 3</h2>
+            <p>Legs Maintenance + Side Delts</p>
+          </div>
+
+          <div class="focus-board" aria-label="Muscle focus map">
+            <div class="focus-map" aria-hidden="true">
+              <span class="focus-slab shoulder-left"></span>
+              <span class="focus-slab shoulder-right"></span>
+              <span class="focus-slab upper-chain"></span>
+              <span class="focus-slab trunk"></span>
+              <span class="focus-slab leg-drive-left"></span>
+              <span class="focus-slab leg-drive-right"></span>
+              <span class="focus-slab hinge-warning"></span>
+            </div>
+            <div class="focus-list">
+              <div class="active"><strong>Side delts</strong><span>Primary exposure</span></div>
+              <div class="active"><strong>Leg drive</strong><span>Controlled load</span></div>
+              <div><strong>Upper chest / back next</strong><span>Upcoming sequence</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="readiness-strip" aria-label="Readiness checks">
+          <span class="ok">Sleep OK</span>
+          <span class="warn">Soreness moderate</span>
+          <span class="warn">Joints watch</span>
+        </div>
+
+        <button class="start-button" type="button">Start Session</button>
+        <div class="quick-actions">
+          <button type="button">Mobility</button>
+          <button type="button">Walk</button>
+          <button type="button">Notes</button>
+        </div>
+      </section>
+
+      <section class="week-flow" aria-labelledby="week-title">
+        <div class="section-title">
+          <span class="section-kicker">Week Plan</span>
+          <h2 id="week-title">Training sequence</h2>
+        </div>
+        <div class="track-line">
+          <article class="track-step done"><span>01</span><p>Priority Upper</p></article>
+          <article class="track-step done"><span>02</span><p>Back Width</p></article>
+          <article class="track-step live"><span>03</span><p>Legs + Delts</p></article>
+          <article class="track-step"><span>04</span><p>Chest + Arms</p></article>
+          <article class="track-step optional"><span>05</span><p>Pump</p></article>
+        </div>
+      </section>
+
+      <section class="workout-flow" aria-labelledby="logger-title">
+        <div class="logger-head">
+          <div>
+            <span class="section-kicker">Working Screen</span>
+            <h2 id="logger-title">Leg Press</h2>
+            <p>Set 1 of 3 · target 8-20 reps · 3 RIR</p>
+          </div>
+          <div class="set-counter">
+            <strong>01</strong>
+            <span>active</span>
+          </div>
+        </div>
+
+        <div class="technical-progress" aria-label="0 of 3 sets logged">
+          <span style="width: 7%"></span>
+        </div>
+
+        <div class="set-entry">
+          <label>
+            <span>Weight</span>
+            <strong>120 kg</strong>
+          </label>
+          <label>
+            <span>Reps</span>
+            <strong>12</strong>
+          </label>
+          <label>
+            <span>RIR</span>
+            <strong>3</strong>
+          </label>
+        </div>
+
+        <button class="log-button" type="button">Log Set</button>
+        <div class="quiet-controls">
+          <button type="button">Skip Set</button>
+          <button type="button">Remove</button>
+        </div>
+
+        <div class="logger-meta">
+          <div><span>Planned</span><strong>3 x 8-20</strong></div>
+          <div><span>Performed</span><strong>0 / 3</strong></div>
+          <div><span>Next</span><strong>Leg Extension</strong></div>
+        </div>
+      </section>
+
+      <section class="library-preview" aria-labelledby="library-title">
+        <div class="section-title">
+          <span class="section-kicker">Exercise Library</span>
+          <h2 id="library-title">Taxonomy preview</h2>
+        </div>
+        <div class="taxonomy-block">
+          <h3>Shoulders umbrella</h3>
+          <div class="muscle-tiles">
+            <article class="muscle-tile selected"><strong>Side Delts</strong><span>Raises / abduction</span></article>
+            <article class="muscle-tile"><strong>Rear Delts</strong><span>Flyes / rows</span></article>
+            <article class="muscle-tile"><strong>Front Delts</strong><span>Press / raise</span></article>
+            <article class="muscle-tile caution"><strong>Shoulder Health</strong><span>Prep / cuff</span></article>
+          </div>
+        </div>
+        <div class="taxonomy-block">
+          <h3>Legs umbrella</h3>
+          <div class="muscle-tiles">
+            <article class="muscle-tile"><strong>Quads</strong><span>Squat / press</span></article>
+            <article class="muscle-tile selected"><strong>Hamstrings</strong><span>Curl / hinge</span></article>
+            <article class="muscle-tile"><strong>Glutes</strong><span>Bridge / hinge</span></article>
+            <article class="muscle-tile"><strong>Calves</strong><span>Raise / ankle</span></article>
+          </div>
+        </div>
+        <article class="exercise-feature caution-line">
+          <div>
+            <strong>Deficit RDL / deadlift pattern</strong>
+            <span>Hamstrings + Glutes</span>
+          </div>
+          <em>Lower-back caution</em>
+        </article>
+      </section>
+
+      <section class="coach-card" aria-labelledby="recovery-title">
+        <div class="coach-mark">Coach</div>
+        <div>
+          <span class="section-kicker">Recovery Engine</span>
+          <h2 id="recovery-title">Hold volume. Execute clean.</h2>
+          <p>Pump is good, soreness is moderate, joints need watching. Keep today's leg work controlled and avoid chasing load jumps.</p>
+        </div>
+        <div class="response-meters">
+          <div><span>Pump</span><strong>Good</strong></div>
+          <div><span>Soreness</span><strong>Moderate</strong></div>
+          <div><span>Joints</span><strong>Watch</strong></div>
+          <div><span>Recovered</span><strong>Likely</strong></div>
+        </div>
+      </section>
+
+      <section class="watch-signals" aria-labelledby="watch-title">
+        <div class="section-title">
+          <span class="section-kicker">Health data ready</span>
+          <h2 id="watch-title">Future Watch Signals</h2>
+        </div>
+        <div class="signal-grid">
+          <div><span>Sleep</span><strong>--</strong></div>
+          <div><span>HRV</span><strong>--</strong></div>
+          <div><span>Resting HR</span><strong>--</strong></div>
+          <div><span>Steps</span><strong>--</strong></div>
+          <div><span>Training load</span><strong>--</strong></div>
+          <div><span>Soreness</span><strong>Manual</strong></div>
+          <div><span>Readiness</span><strong>Planned</strong></div>
+        </div>
+      </section>
+
+      <section class="theme-preview" aria-labelledby="theme-title">
+        <div class="section-title">
+          <span class="section-kicker">Future setting</span>
+          <h2 id="theme-title">Adaptive Mood Theme</h2>
+        </div>
+        <div class="theme-options">
+          <article class="theme-option active"><strong>Gym / Performance Mode</strong><span>Black, charcoal, electric steel</span></article>
+          <article class="theme-option"><strong>Mobility / Recovery Mode</strong><span>Calmer palette later</span></article>
+          <article class="theme-option"><strong>Movement Practice Mode</strong><span>Tai Chi / downshift screens</span></article>
+        </div>
+      </section>
+
+      <section class="history-strip" aria-labelledby="history-title">
+        <div class="section-title">
+          <span class="section-kicker">History Snapshot</span>
+          <h2 id="history-title">Session 2 completed</h2>
+        </div>
+        <div class="history-sets">
+          <div><strong>6</strong><span>Back Width</span></div>
+          <div><strong>4</strong><span>Rear Delts</span></div>
+          <div><strong>3</strong><span>Biceps</span></div>
+          <div><strong>3</strong><span>Triceps</span></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
