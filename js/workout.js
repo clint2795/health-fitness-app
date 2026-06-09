@@ -2,6 +2,7 @@
   var workoutClickBound = false;
   var lastWorkoutActionAt = 0;
   var lastWorkoutActionKey = "";
+  var inlineChangeExerciseIndex = null;
 
   function escapeHtml(value) {
     return String(value)
@@ -218,6 +219,35 @@
     });
   }
 
+  function getInlineChangePanelMarkup(exerciseIndex, exercise) {
+    var options;
+
+    if (inlineChangeExerciseIndex !== exerciseIndex || isExerciseLocked(exercise)) {
+      return "";
+    }
+
+    options = getReplacementOptions(exercise);
+
+    return (
+      '<div class="exercise-actions" data-inline-change-panel="' + exerciseIndex + '">' +
+        '<label>Replacement exercise' +
+          '<select data-inline-change-select="' + exerciseIndex + '"' + (options.length ? "" : " disabled") + '>' +
+            (options.length ? options.map(function (option) {
+              var riskReasons = getExerciseRiskReasons(option, window.TrainingStorage.getAppState());
+              var riskLabel = riskReasons.length ? " - warning" : "";
+
+              return '<option value="' + escapeHtml(option.id) + '">' + escapeHtml(option.name) + ' - ' + escapeHtml(option.status) + riskLabel + '</option>';
+            }).join("") : '<option value="">No replacement available</option>') +
+          '</select>' +
+        '</label>' +
+        '<div class="exercise-secondary-actions">' +
+          '<button class="button button-primary exercise-secondary-button" type="button" data-apply-inline-change="' + exerciseIndex + '"' + (options.length ? "" : " disabled") + '>Apply</button>' +
+          '<button class="button exercise-secondary-button" type="button" data-cancel-inline-change="' + exerciseIndex + '">Cancel</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
   function hasAnyLoggedSetData(exercise) {
     ensureLoggedSets(exercise);
 
@@ -392,6 +422,7 @@
           '</div>' +
           getSubstitutionMarkup(exercise) +
           '<p class="subtle">' + escapeHtml(exercise.notes) + '</p>' +
+          getInlineChangePanelMarkup(index, exercise) +
           getProgressMarkup(exercise) +
           createSetInputs(index, exercise) +
           getExerciseActionsMarkup(index, exercise) +
@@ -983,6 +1014,68 @@
     select.focus();
   }
 
+  function openInlineChangePanel(exerciseIndex) {
+    inlineChangeExerciseIndex = Number(exerciseIndex);
+    renderWorkoutLogger();
+    focusExerciseCard(inlineChangeExerciseIndex);
+  }
+
+  function cancelInlineChangePanel() {
+    var previousIndex = inlineChangeExerciseIndex;
+
+    inlineChangeExerciseIndex = null;
+    renderWorkoutLogger();
+
+    if (previousIndex !== null) {
+      focusExerciseCard(previousIndex);
+    }
+  }
+
+  function applyInlineExerciseChange(exerciseIndex) {
+    var session = getActiveSession();
+    var exercise = session && session.exercises ? session.exercises[exerciseIndex] : null;
+    var select = document.querySelector('[data-inline-change-select="' + exerciseIndex + '"]');
+    var state = window.TrainingStorage.getAppState();
+    var replacement = select ? getLibraryExerciseById(state, select.value) : null;
+    var status = document.querySelector("#workout-save-status");
+    var originalExerciseId;
+    var originalExerciseName;
+
+    if (!exercise || !replacement || isExerciseLocked(exercise)) {
+      return;
+    }
+
+    originalExerciseId = exercise.substitution ? exercise.substitution.originalExerciseId : exercise.exerciseId;
+    originalExerciseName = exercise.substitution ? exercise.substitution.originalExerciseName : exercise.name;
+
+    exercise.exerciseId = replacement.id;
+    exercise.name = replacement.name;
+    exercise.repRange = replacement.repRange;
+    exercise.status = replacement.status;
+    exercise.notes = replacement.notes;
+    exercise.exerciseCompleted = false;
+    exercise.exerciseCompletedAt = null;
+    exercise.substitution = {
+      originalExerciseId: originalExerciseId,
+      originalExerciseName: originalExerciseName,
+      newExerciseId: replacement.id,
+      newExerciseName: replacement.name,
+      reason: "Changed during workout",
+      notes: "",
+      swappedAt: new Date().toISOString()
+    };
+
+    ensureLoggedSets(exercise);
+    inlineChangeExerciseIndex = null;
+    window.TrainingStorage.saveActiveSession(session);
+    renderWorkoutLogger();
+    focusExerciseCard(exerciseIndex);
+
+    if (status) {
+      status.textContent = "Exercise changed to " + replacement.name + ".";
+    }
+  }
+
   function saveExerciseChange() {
     var session = getActiveSession();
     var modal = document.querySelector("#change-exercise-modal");
@@ -1163,71 +1256,7 @@
     }
   }
 
-  function handleWorkoutClick(event) {
-    var target = event.target;
-    var workoutRoot = getClosest(target, "#workout-exercises");
-    var saveSetButton = getClosest(target, "[data-save-set]");
-    var addSetButton = getClosest(target, "[data-add-set]");
-    var removeSetButton = getClosest(target, "[data-remove-set]");
-    var skipSetButton = getClosest(target, "[data-skip-set]");
-    var unskipSetButton = getClosest(target, "[data-unskip-set]");
-    var skipExerciseButton = getClosest(target, "[data-skip-exercise]");
-    var unskipExerciseButton = getClosest(target, "[data-unskip-exercise]");
-    var completeExerciseButton = getClosest(target, "[data-complete-exercise]");
-    var unlockExerciseButton = getClosest(target, "[data-unlock-exercise]");
-    var changeExerciseButton = getClosest(target, "[data-change-exercise]");
-    var parts;
-
-    if (!workoutRoot) {
-      return;
-    }
-
-    if (saveSetButton) {
-      parts = saveSetButton.dataset.saveSet.split(":");
-      saveSet(Number(parts[0]), Number(parts[1]));
-    }
-
-    if (addSetButton) {
-      addSet(Number(addSetButton.dataset.addSet));
-    }
-
-    if (removeSetButton) {
-      parts = removeSetButton.dataset.removeSet.split(":");
-      removeSet(Number(parts[0]), Number(parts[1]));
-    }
-
-    if (skipSetButton) {
-      parts = skipSetButton.dataset.skipSet.split(":");
-      skipSet(Number(parts[0]), Number(parts[1]));
-    }
-
-    if (unskipSetButton) {
-      parts = unskipSetButton.dataset.unskipSet.split(":");
-      unskipSet(Number(parts[0]), Number(parts[1]));
-    }
-
-    if (completeExerciseButton) {
-      completeExercise(Number(completeExerciseButton.dataset.completeExercise));
-    }
-
-    if (skipExerciseButton) {
-      openSkipExerciseModal(Number(skipExerciseButton.dataset.skipExercise));
-    }
-
-    if (unskipExerciseButton) {
-      unskipExercise(Number(unskipExerciseButton.dataset.unskipExercise));
-    }
-
-    if (unlockExerciseButton) {
-      unlockExercise(Number(unlockExerciseButton.dataset.unlockExercise));
-    }
-
-    if (changeExerciseButton) {
-      openChangeExerciseModal(Number(changeExerciseButton.dataset.changeExercise));
-    }
-  }
-
-  function getWorkoutActionKey(target) {
+  function getWorkoutAction(target) {
     var selectors = [
       "saveSet",
       "addSet",
@@ -1238,7 +1267,9 @@
       "unskipExercise",
       "completeExercise",
       "unlockExercise",
-      "changeExercise"
+      "changeExercise",
+      "applyInlineChange",
+      "cancelInlineChange"
     ];
     var index;
     var button;
@@ -1249,24 +1280,117 @@
       }) + "]");
 
       if (button) {
-        return selectors[index] + ":" + button.dataset[selectors[index]];
+        return {
+          name: selectors[index],
+          value: button.dataset[selectors[index]],
+          key: selectors[index] + ":" + button.dataset[selectors[index]]
+        };
       }
     }
 
-    return "";
+    return null;
+  }
+
+  function runWorkoutAction(action) {
+    var parts;
+
+    if (!action) {
+      return;
+    }
+
+    if (action.name === "saveSet") {
+      parts = action.value.split(":");
+      saveSet(Number(parts[0]), Number(parts[1]));
+      return;
+    }
+
+    if (action.name === "addSet") {
+      addSet(Number(action.value));
+      return;
+    }
+
+    if (action.name === "removeSet") {
+      parts = action.value.split(":");
+      removeSet(Number(parts[0]), Number(parts[1]));
+      return;
+    }
+
+    if (action.name === "skipSet") {
+      parts = action.value.split(":");
+      skipSet(Number(parts[0]), Number(parts[1]));
+      return;
+    }
+
+    if (action.name === "unskipSet") {
+      parts = action.value.split(":");
+      unskipSet(Number(parts[0]), Number(parts[1]));
+      return;
+    }
+
+    if (action.name === "completeExercise") {
+      completeExercise(Number(action.value));
+      return;
+    }
+
+    if (action.name === "skipExercise") {
+      openSkipExerciseModal(Number(action.value));
+      return;
+    }
+
+    if (action.name === "unskipExercise") {
+      unskipExercise(Number(action.value));
+      return;
+    }
+
+    if (action.name === "unlockExercise") {
+      unlockExercise(Number(action.value));
+      return;
+    }
+
+    if (action.name === "changeExercise") {
+      openInlineChangePanel(Number(action.value));
+      return;
+    }
+
+    if (action.name === "applyInlineChange") {
+      applyInlineExerciseChange(Number(action.value));
+      return;
+    }
+
+    if (action.name === "cancelInlineChange") {
+      cancelInlineChangePanel();
+    }
   }
 
   function handleWorkoutActionEvent(event) {
     var now = Date.now();
-    var actionKey = getWorkoutActionKey(event.target);
+    var action = getWorkoutAction(event.target);
 
-    if (actionKey && actionKey === lastWorkoutActionKey && now - lastWorkoutActionAt < 350) {
+    if (!action) {
+      return;
+    }
+
+    if (action.key === lastWorkoutActionKey && now - lastWorkoutActionAt < 350) {
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
 
     lastWorkoutActionAt = now;
-    lastWorkoutActionKey = actionKey;
-    handleWorkoutClick(event);
+    lastWorkoutActionKey = action.key;
+    event.preventDefault();
+    event.stopPropagation();
+    runWorkoutAction(action);
+  }
+
+  function bindWorkoutActionEvents(container) {
+    if (window.PointerEvent) {
+      container.addEventListener("pointerup", handleWorkoutActionEvent);
+      return;
+    }
+
+    container.addEventListener("touchend", handleWorkoutActionEvent);
+    container.addEventListener("click", handleWorkoutActionEvent);
   }
 
   function handleWorkoutInput(event) {
@@ -1321,10 +1445,8 @@
       container.addEventListener("keydown", handleWorkoutKeydown);
     }
 
-    if (!workoutClickBound) {
-      document.addEventListener("click", handleWorkoutActionEvent);
-      document.addEventListener("touchend", handleWorkoutActionEvent);
-      document.addEventListener("pointerup", handleWorkoutActionEvent);
+    if (container && !workoutClickBound) {
+      bindWorkoutActionEvents(container);
       workoutClickBound = true;
     }
 
