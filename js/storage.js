@@ -1,59 +1,15 @@
 (function () {
+  var APP_SCHEMA_VERSION = 8;
   var prefix = "trainingPlanner:";
   var appStateKey = "appState";
   var activeSessionKey = "activeSession";
   var todayDraftKey = "todayDraft";
+  var workoutHistoryKey = "workoutHistory";
   var volumeRecommendationsKey = "volumeRecommendations";
   var lastRepairKey = "lastStateRepair";
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
-  }
-
-  function getDefaultState() {
-    var data = window.TrainingData || {};
-
-    return {
-      userProfile: clone(data.userProfile || {}),
-      mesocycleSettings: clone(data.mesocycleSettings || {}),
-      rirTargets: clone(data.rirTargets || []),
-      musclePriorities: clone(data.musclePriorities || []),
-      injurySettings: clone(data.injurySettings || {}),
-      exerciseLibrary: clone(data.exerciseLibrary || []),
-      exercisePreferences: clone(data.exercisePreferences || {}),
-      goalPresets: clone(data.goalPresets || []),
-      sessionTemplates: clone(data.sessionTemplates || []),
-      completedWorkoutHistory: clone(data.completedWorkoutHistory || []),
-      plannedWeek: clone(data.plannedWeek || {}),
-      nonHypertrophyTraining: clone(data.nonHypertrophyTraining || {}),
-      recoveryResponseFields: clone(data.recoveryResponseFields || {}),
-      activeGoalPreset: data.activeGoalPreset || "",
-      selectedSessionTemplate: data.selectedSessionTemplate || ""
-    };
-  }
-
-  function mergeById(defaultItems, savedItems) {
-    var savedById = {};
-
-    (savedItems || []).forEach(function (item) {
-      savedById[item.id] = item;
-    });
-
-    return (defaultItems || []).map(function (item) {
-      return Object.assign({}, item, savedById[item.id] || {});
-    });
-  }
-
-  function getValidSessionTemplateId(defaultState, savedState) {
-    var savedId = savedState.selectedSessionTemplate;
-    var defaultId = defaultState.selectedSessionTemplate;
-    var templates = defaultState.sessionTemplates || [];
-
-    if (savedId && templates.some(function (template) { return template.id === savedId; })) {
-      return savedId;
-    }
-
-    return defaultId;
   }
 
   function getTodayDate() {
@@ -67,235 +23,6 @@
 
     date.setDate(date.getDate() + diff);
     return date.toISOString().slice(0, 10);
-  }
-
-  function buildDefaultPlannedSessions(defaultState, savedPlanned) {
-    var completedIds = savedPlanned.completedSessionTemplateIds || [];
-    var currentIndex = Number(savedPlanned.currentWeekSessionIndex || 1);
-
-    return (defaultState.sessionTemplates || []).map(function (template, index) {
-      var sessionNumber = index + 1;
-      var status = template.status === "optional" ? "optional" : "planned";
-
-      if (completedIds.indexOf(template.id) !== -1) {
-        status = "completed";
-      } else if (sessionNumber === currentIndex) {
-        status = "current";
-      }
-
-      return {
-        sessionNumber: sessionNumber,
-        templateId: template.id,
-        name: template.name,
-        status: status,
-        plannedDate: null,
-        completedAt: null,
-        skippedAt: null
-      };
-    });
-  }
-
-  function getSeedCompletedTemplateIds(defaultState) {
-    return (defaultState.completedWorkoutHistory || []).map(function (session) {
-      return session.templateId;
-    }).filter(Boolean);
-  }
-
-  function getCompletedSession2(history) {
-    return (history || []).find(function (session) {
-      return session &&
-        session.status === "completed" &&
-        session.date === "2026-06-09" &&
-        (session.templateId === "session-2-back-width-biceps-rear-delts" || Number(session.sessionNumber) === 2);
-    }) || null;
-  }
-
-  function isPlannedSession2Completed(plannedWeek) {
-    var sessions = (plannedWeek || {}).sessions || [];
-    var session2 = sessions.find(function (session) {
-      return session.templateId === "session-2-back-width-biceps-rear-delts" || Number(session.sessionNumber) === 2;
-    });
-
-    return Boolean(session2 && session2.status === "completed");
-  }
-
-  function normalizeText(value) {
-    return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
-  }
-
-  function hasSameMuscleFocus(a, b) {
-    var aMuscles = (a && a.muscles) || [];
-    var bMuscles = (b && b.muscles) || [];
-
-    if (!aMuscles.length || !bMuscles.length) {
-      return false;
-    }
-
-    return ["backWidth", "biceps", "rearDelts"].every(function (muscle) {
-      return aMuscles.indexOf(muscle) !== -1 && bMuscles.indexOf(muscle) !== -1;
-    });
-  }
-
-  function sessionLooksLikeSession2(session, completedSession2) {
-    var title = normalizeText(session && (session.title || session.name));
-    var focus = normalizeText(session && session.focus);
-    var completedTitle = normalizeText(completedSession2 && completedSession2.title);
-
-    if (!session || !completedSession2) {
-      return false;
-    }
-
-    if (session.templateId === "session-2-back-width-biceps-rear-delts" || Number(session.sessionNumber) === 2) {
-      return true;
-    }
-
-    if (completedTitle && title && title === completedTitle) {
-      return true;
-    }
-
-    if (title.indexOf("session 2") !== -1 && title.indexOf("back width") !== -1) {
-      return true;
-    }
-
-    if (focus.indexOf("back width") !== -1 && focus.indexOf("biceps") !== -1 && focus.indexOf("rear delts") !== -1) {
-      return true;
-    }
-
-    return session.date === completedSession2.date && hasSameMuscleFocus(session, completedSession2);
-  }
-
-  function getDraftSession(draft) {
-    return draft && draft.session ? draft.session : draft;
-  }
-
-  function advancePlannedWeekPastSession2(state) {
-    var plannedWeek = state.plannedWeek || {};
-    var sessions = plannedWeek.sessions || [];
-    var session3 = sessions.find(function (session) {
-      return session.templateId === "session-3-legs-maintenance-side-delts" || Number(session.sessionNumber) === 3;
-    });
-
-    sessions.forEach(function (session) {
-      if (session.templateId === "session-2-back-width-biceps-rear-delts" || Number(session.sessionNumber) === 2) {
-        session.status = "completed";
-        session.completedAt = session.completedAt || "2026-06-09T12:00:00.000Z";
-      } else if (session.status === "current") {
-        session.status = session.status === "optional" ? "optional" : "planned";
-      }
-    });
-
-    if (session3 && session3.status !== "completed" && session3.status !== "skipped") {
-      session3.status = "current";
-      session3.plannedDate = session3.plannedDate || getTodayDate();
-      plannedWeek.currentWeekSessionIndex = session3.sessionNumber;
-      state.selectedSessionTemplate = session3.templateId;
-    }
-
-    plannedWeek.completedSessionTemplateIds = sessions.filter(function (session) {
-      return session.status === "completed";
-    }).map(function (session) {
-      return session.templateId;
-    }).filter(function (id, index, list) {
-      return id && list.indexOf(id) === index;
-    });
-    plannedWeek.sessions = sessions;
-    state.plannedWeek = plannedWeek;
-
-    return state;
-  }
-
-  function mergePlannedWeek(defaultState, savedState) {
-    var defaultPlanned = defaultState.plannedWeek || {};
-    var savedPlanned = savedState.plannedWeek || {};
-    var templateIds = (defaultState.sessionTemplates || []).map(function (template) { return template.id; });
-    var sourceSessions = Array.isArray(savedPlanned.sessions) && savedPlanned.sessions.length
-      ? savedPlanned.sessions
-      : buildDefaultPlannedSessions(defaultState, Object.keys(savedPlanned).length ? savedPlanned : defaultPlanned);
-    var sessions = (defaultState.sessionTemplates || []).map(function (template, index) {
-      var savedSession = sourceSessions.find(function (session) {
-        return session.templateId === template.id;
-      }) || {};
-      var fallbackStatus = template.status === "optional" ? "optional" : "planned";
-
-      return {
-        sessionNumber: index + 1,
-        templateId: template.id,
-        name: savedSession.name || template.name,
-        status: savedSession.status || fallbackStatus,
-        plannedDate: savedSession.plannedDate || null,
-        completedAt: savedSession.completedAt || null,
-        skippedAt: savedSession.skippedAt || null
-      };
-    });
-    var current = sessions.find(function (session) {
-      return session.status === "current";
-    });
-    var seedCompletedTemplateIds = getSeedCompletedTemplateIds(defaultState);
-    var currentIndex;
-    var completed;
-
-    sessions.forEach(function (session) {
-      if (seedCompletedTemplateIds.indexOf(session.templateId) !== -1) {
-        session.status = "completed";
-        session.completedAt = session.completedAt || (defaultState.completedWorkoutHistory.find(function (historySession) {
-          return historySession.templateId === session.templateId;
-        }) || {}).completedAt || null;
-      }
-    });
-
-    current = sessions.find(function (session) {
-      return session.status === "current";
-    });
-
-    if (!current) {
-      current = sessions.find(function (session) {
-        return session.status !== "completed" && session.status !== "skipped" && session.status !== "optional";
-      });
-      if (current) {
-        current.status = "current";
-      }
-    }
-
-    currentIndex = current ? current.sessionNumber : Number(savedPlanned.currentWeekSessionIndex || defaultPlanned.currentWeekSessionIndex || 1);
-    if (current && !current.plannedDate) {
-      current.plannedDate = getTodayDate();
-    }
-    completed = sessions.filter(function (session) {
-      return session.status === "completed";
-    }).map(function (session) {
-      return session.templateId;
-    });
-
-    return {
-      weekStartDate: savedPlanned.weekStartDate || defaultPlanned.weekStartDate || getWeekStartDate(),
-      currentWeekNumber: Number(savedPlanned.currentWeekNumber || defaultPlanned.currentWeekNumber || 1),
-      currentWeekSessionIndex: currentIndex,
-      completedSessionTemplateIds: completed.filter(function (id, index, list) {
-        return templateIds.indexOf(id) !== -1 && list.indexOf(id) === index;
-      }),
-      sessions: sessions
-    };
-  }
-
-  function mergeAppState(defaultState, savedState) {
-    savedState = savedState || {};
-
-    return {
-      userProfile: Object.assign({}, defaultState.userProfile, savedState.userProfile || {}),
-      mesocycleSettings: Object.assign({}, defaultState.mesocycleSettings, savedState.mesocycleSettings || {}),
-      rirTargets: savedState.rirTargets || defaultState.rirTargets,
-      musclePriorities: mergeById(defaultState.musclePriorities, savedState.musclePriorities),
-      injurySettings: Object.assign({}, defaultState.injurySettings, savedState.injurySettings || {}),
-      exerciseLibrary: defaultState.exerciseLibrary,
-      exercisePreferences: Object.assign({}, defaultState.exercisePreferences, savedState.exercisePreferences || {}),
-      goalPresets: defaultState.goalPresets,
-      sessionTemplates: defaultState.sessionTemplates,
-      plannedWeek: mergePlannedWeek(defaultState, savedState),
-      nonHypertrophyTraining: Object.assign({}, defaultState.nonHypertrophyTraining, savedState.nonHypertrophyTraining || {}),
-      recoveryResponseFields: Object.assign({}, defaultState.recoveryResponseFields, savedState.recoveryResponseFields || {}),
-      activeGoalPreset: savedState.activeGoalPreset || defaultState.activeGoalPreset,
-      selectedSessionTemplate: getValidSessionTemplateId(defaultState, savedState)
-    };
   }
 
   function getItem(key, fallback) {
@@ -321,163 +48,503 @@
     localStorage.removeItem(prefix + key);
   }
 
-  function getSeedWorkoutHistory() {
-    var data = window.TrainingData || {};
+  function mergeById(defaultItems, savedItems) {
+    var savedById = {};
 
-    return clone(data.completedWorkoutHistory || []);
-  }
-
-  function ensureSeedWorkoutHistory() {
-    var seedHistory = getSeedWorkoutHistory();
-    var history = getItem("workoutHistory", []);
-    var changed = false;
-
-    seedHistory.forEach(function (seedSession) {
-      var exists = (history || []).some(function (session) {
-        return session.id === seedSession.id;
-      });
-
-      if (!exists) {
-        history.push(seedSession);
-        changed = true;
+    (savedItems || []).forEach(function (item) {
+      if (item && item.id) {
+        savedById[item.id] = item;
       }
     });
 
-    if (changed) {
-      setItem("workoutHistory", history);
-    }
-
-    return history || [];
+    return (defaultItems || []).map(function (item) {
+      return Object.assign({}, item, savedById[item.id] || {});
+    });
   }
 
-  function clearCompletedSessionDrafts(defaultState) {
-    var completedTemplateIds = getSeedCompletedTemplateIds(defaultState);
-    var activeSession = getItem(activeSessionKey, null);
-    var todayDraft = getItem(todayDraftKey, null);
+  function getDefaultState() {
+    var data = window.TrainingData || {};
 
-    if (activeSession && completedTemplateIds.indexOf(activeSession.templateId) !== -1) {
-      removeItem(activeSessionKey);
-    }
-
-    if (todayDraft && completedTemplateIds.indexOf(todayDraft.templateId || (todayDraft.session || {}).templateId) !== -1) {
-      removeItem(todayDraftKey);
-    }
-  }
-
-  function repairCompletedSession2State(defaultState) {
-    var savedState = getItem(appStateKey, null) || {};
-    var mergedState = mergeAppState(defaultState, savedState);
-    var history = ensureSeedWorkoutHistory();
-    var completedSession2 = getCompletedSession2(history);
-    var activeSession = getItem(activeSessionKey, null);
-    var todayDraft = getItem(todayDraftKey, null);
-    var repair = {
-      repairedAt: new Date().toISOString(),
-      reason: "Session 2 was already completed in planned week and workout history.",
-      clearedActiveSession: false,
-      clearedTodayDraft: false,
-      advancedPlannedWeekToSession3: false
+    return {
+      schemaVersion: APP_SCHEMA_VERSION,
+      userProfile: clone(data.userProfile || {}),
+      mesocycleSettings: clone(data.mesocycleSettings || {}),
+      rirTargets: clone(data.rirTargets || []),
+      musclePriorities: clone(data.musclePriorities || []),
+      injurySettings: clone(data.injurySettings || {}),
+      exerciseLibrary: clone(data.exerciseLibrary || []),
+      exercisePreferences: clone(data.exercisePreferences || {}),
+      goalPresets: clone(data.goalPresets || []),
+      sessionTemplates: clone(data.sessionTemplates || []),
+      completedWorkoutHistory: clone(data.completedWorkoutHistory || []),
+      plannedWeek: clone(data.plannedWeek || {}),
+      activeSession: null,
+      todayDraft: null,
+      workoutHistory: clone(data.completedWorkoutHistory || []),
+      settings: {
+        activeGoalPreset: data.activeGoalPreset || "",
+        selectedSessionTemplate: data.selectedSessionTemplate || ""
+      },
+      recoveryResponses: [],
+      functionalSessions: [],
+      nonHypertrophyTraining: clone(data.nonHypertrophyTraining || {}),
+      recoveryResponseFields: clone(data.recoveryResponseFields || {}),
+      activeGoalPreset: data.activeGoalPreset || "",
+      selectedSessionTemplate: data.selectedSessionTemplate || "",
+      volumeRecommendations: []
     };
-    var changed = false;
-
-    if (!completedSession2 || !isPlannedSession2Completed(mergedState.plannedWeek)) {
-      return;
-    }
-
-    if (activeSession && activeSession.status !== "completed" && sessionLooksLikeSession2(activeSession, completedSession2)) {
-      removeItem(activeSessionKey);
-      repair.clearedActiveSession = true;
-      changed = true;
-    }
-
-    if (todayDraft && sessionLooksLikeSession2(getDraftSession(todayDraft), completedSession2)) {
-      removeItem(todayDraftKey);
-      repair.clearedTodayDraft = true;
-      changed = true;
-    }
-
-    if ((mergedState.plannedWeek || {}).currentWeekSessionIndex !== 3 || mergedState.selectedSessionTemplate === "session-2-back-width-biceps-rear-delts") {
-      mergedState = advancePlannedWeekPastSession2(mergedState);
-      saveAppState(mergedState);
-      repair.advancedPlannedWeekToSession3 = true;
-      changed = true;
-    }
-
-    if (changed) {
-      setItem(lastRepairKey, repair);
-    }
   }
 
-  function runDefaultDataMigrations(defaultState) {
-    ensureSeedWorkoutHistory();
-    repairCompletedSession2State(defaultState);
-    clearCompletedSessionDrafts(defaultState);
+  function getValidSessionTemplateId(defaultState, savedState) {
+    var savedSettings = savedState.settings || {};
+    var savedId = savedState.selectedSessionTemplate || savedSettings.selectedSessionTemplate;
+    var defaultId = defaultState.settings.selectedSessionTemplate || defaultState.selectedSessionTemplate;
+    var templates = defaultState.sessionTemplates || [];
+
+    if (savedId && templates.some(function (template) { return template.id === savedId; })) {
+      return savedId;
+    }
+
+    return defaultId;
+  }
+
+  function getTemplateById(state, templateId) {
+    return (state.sessionTemplates || []).find(function (template) {
+      return template.id === templateId;
+    }) || null;
+  }
+
+  function getTemplateSessionNumber(state, templateId) {
+    var index = (state.sessionTemplates || []).findIndex(function (template) {
+      return template.id === templateId;
+    });
+
+    return index === -1 ? null : index + 1;
+  }
+
+  function normalizeText(value) {
+    return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function sameMuscleSet(a, b) {
+    var aMuscles = (a || []).slice().sort().join("|");
+    var bMuscles = (b || []).slice().sort().join("|");
+
+    return Boolean(aMuscles && bMuscles && aMuscles === bMuscles);
+  }
+
+  function normalizeSessionMetadata(session, state) {
+    var template;
+
+    if (!session) {
+      return null;
+    }
+
+    session = clone(session);
+
+    if (!session.templateId && session.sessionNumber) {
+      template = (state.sessionTemplates || [])[Number(session.sessionNumber) - 1];
+      if (template) {
+        session.templateId = template.id;
+      }
+    }
+
+    if (!session.templateId && session.title) {
+      template = (state.sessionTemplates || []).find(function (item) {
+        return normalizeText(item.name) === normalizeText(session.title);
+      });
+      if (template) {
+        session.templateId = template.id;
+      }
+    }
+
+    if (session.templateId && !session.sessionNumber) {
+      session.sessionNumber = getTemplateSessionNumber(state, session.templateId);
+    }
+
+    if (!session.title && session.name) {
+      session.title = session.name;
+    }
+
+    if (!Array.isArray(session.exercises)) {
+      session.exercises = [];
+    }
+
+    if (!Array.isArray(session.prep)) {
+      session.prep = [];
+    }
+
+    if (!Array.isArray(session.muscles)) {
+      session.muscles = [];
+    }
+
+    session.exercises = session.exercises.map(function (exercise) {
+      exercise = Object.assign({}, exercise);
+      exercise.plannedSets = Math.max(1, Number(exercise.plannedSets) || 1);
+      exercise.loggedSets = Array.isArray(exercise.loggedSets) ? exercise.loggedSets : [];
+      return exercise;
+    });
+
+    return session;
+  }
+
+  function normalizeWorkoutHistory(history, state) {
+    var byId = {};
+    var normalized = [];
+
+    (history || []).forEach(function (session) {
+      var normalizedSession = normalizeSessionMetadata(session, state);
+      var key;
+
+      if (!normalizedSession) {
+        return;
+      }
+
+      normalizedSession.status = normalizedSession.status || "completed";
+      key = normalizedSession.id || [
+        normalizedSession.date || "",
+        normalizedSession.templateId || "",
+        normalizedSession.title || "",
+        normalizedSession.completedAt || ""
+      ].join("|");
+
+      if (byId[key]) {
+        return;
+      }
+
+      byId[key] = true;
+      normalized.push(normalizedSession);
+    });
+
+    return normalized;
+  }
+
+  function mergeSeedWorkoutHistory(history, seedHistory, state) {
+    var merged = normalizeWorkoutHistory(history, state);
+    var existingIds = {};
+
+    merged.forEach(function (session) {
+      if (session.id) {
+        existingIds[session.id] = true;
+      }
+    });
+
+    (seedHistory || []).forEach(function (seedSession) {
+      if (seedSession.id && !existingIds[seedSession.id]) {
+        merged.push(normalizeSessionMetadata(seedSession, state));
+        existingIds[seedSession.id] = true;
+      }
+    });
+
+    return normalizeWorkoutHistory(merged, state);
+  }
+
+  function getCompletedTemplateIdsFromHistory(history) {
+    return (history || []).filter(function (session) {
+      return session && session.status === "completed" && session.templateId;
+    }).map(function (session) {
+      return session.templateId;
+    }).filter(function (id, index, list) {
+      return list.indexOf(id) === index;
+    });
+  }
+
+  function normalizePlannedWeek(plannedWeek, state) {
+    var templates = state.sessionTemplates || [];
+    var savedSessions = (plannedWeek && plannedWeek.sessions) || [];
+    var completedIds = (plannedWeek && plannedWeek.completedSessionTemplateIds) || [];
+    var historyCompletedIds = getCompletedTemplateIdsFromHistory(state.workoutHistory);
+    var currentIndex = Number(plannedWeek && plannedWeek.currentWeekSessionIndex) || 1;
+    var hasCurrent = false;
+    var sessions;
+    var firstOpen;
+
+    completedIds = completedIds.concat(historyCompletedIds).filter(function (id, index, list) {
+      return id && list.indexOf(id) === index;
+    });
+
+    sessions = templates.map(function (template, index) {
+      var saved = savedSessions.find(function (session) {
+        return session.templateId === template.id || Number(session.sessionNumber) === index + 1;
+      }) || {};
+      var status = saved.status || (template.status === "optional" ? "optional" : "planned");
+
+      if (completedIds.indexOf(template.id) !== -1) {
+        status = "completed";
+      } else if (Number(saved.sessionNumber || index + 1) === currentIndex && status !== "optional") {
+        status = "current";
+      }
+
+      return {
+        sessionNumber: index + 1,
+        templateId: template.id,
+        name: saved.name || template.name,
+        status: status,
+        plannedDate: saved.plannedDate || null,
+        completedAt: saved.completedAt || null,
+        skippedAt: saved.skippedAt || null
+      };
+    });
+
+    sessions.forEach(function (session) {
+      if (session.status === "current") {
+        if (hasCurrent) {
+          session.status = "planned";
+        }
+        hasCurrent = true;
+      }
+    });
+
+    if (!hasCurrent) {
+      firstOpen = sessions.find(function (session) {
+        return session.status !== "completed" && session.status !== "skipped" && session.status !== "optional";
+      });
+      if (firstOpen) {
+        firstOpen.status = "current";
+      }
+    }
+
+    firstOpen = sessions.find(function (session) {
+      return session.status === "current";
+    });
+
+    if (firstOpen && !firstOpen.plannedDate) {
+      firstOpen.plannedDate = getTodayDate();
+    }
+
+    return {
+      weekStartDate: (plannedWeek && plannedWeek.weekStartDate) || getWeekStartDate(),
+      currentWeekNumber: Number(plannedWeek && plannedWeek.currentWeekNumber) || 1,
+      currentWeekSessionIndex: firstOpen ? firstOpen.sessionNumber : currentIndex,
+      completedSessionTemplateIds: sessions.filter(function (session) {
+        return session.status === "completed";
+      }).map(function (session) {
+        return session.templateId;
+      }),
+      sessions: sessions
+    };
+  }
+
+  function sessionMatchesCompletedSession(session, completedSession, state) {
+    var sessionTemplate = session && session.templateId ? getTemplateById(state, session.templateId) : null;
+    var completedTemplate = completedSession && completedSession.templateId ? getTemplateById(state, completedSession.templateId) : null;
+    var sessionTitle = normalizeText(session && (session.title || session.name));
+    var completedTitle = normalizeText(completedSession && (completedSession.title || completedSession.name));
+
+    if (!session || !completedSession) {
+      return false;
+    }
+
+    if (session.templateId && completedSession.templateId && session.templateId === completedSession.templateId) {
+      return true;
+    }
+
+    if (session.sessionNumber && completedSession.sessionNumber && Number(session.sessionNumber) === Number(completedSession.sessionNumber)) {
+      return true;
+    }
+
+    if (sessionTitle && completedTitle && sessionTitle === completedTitle) {
+      return true;
+    }
+
+    if (session.date && completedSession.date && session.date === completedSession.date && sameMuscleSet(session.muscles, completedSession.muscles)) {
+      return true;
+    }
+
+    return Boolean(sessionTemplate && completedTemplate && normalizeText(sessionTemplate.focus) === normalizeText(completedTemplate.focus));
+  }
+
+  function clearDraftsForCompletedSessions(state) {
+    var completed = (state.workoutHistory || []).filter(function (session) {
+      return session && session.status === "completed";
+    });
+
+    if (state.activeSession && state.activeSession.status !== "completed" && completed.some(function (session) {
+      return sessionMatchesCompletedSession(state.activeSession, session, state);
+    })) {
+      state.activeSession = null;
+    }
+
+    if (state.todayDraft) {
+      var draftSession = state.todayDraft.session || state.todayDraft;
+      if (completed.some(function (session) {
+        return sessionMatchesCompletedSession(draftSession, session, state);
+      })) {
+        state.todayDraft = null;
+      }
+    }
+
+    return state;
+  }
+
+  function normalizeTodayDraft(draft, state) {
+    var session;
+
+    if (!draft) {
+      return null;
+    }
+
+    session = normalizeSessionMetadata(draft.session || draft, state);
+
+    if (!session) {
+      return null;
+    }
+
+    return {
+      date: draft.date || session.date || getTodayDate(),
+      sessionNumber: draft.sessionNumber || session.sessionNumber || null,
+      templateId: draft.templateId || session.templateId || "",
+      generatedAt: draft.generatedAt || new Date().toISOString(),
+      session: session
+    };
+  }
+
+  function migrateLegacyState(defaultState, savedState) {
+    var state = Object.assign({}, defaultState, savedState || {});
+    var settings = Object.assign({}, defaultState.settings, savedState && savedState.settings || {});
+
+    state.schemaVersion = Number(state.schemaVersion) || 0;
+    settings.activeGoalPreset = state.activeGoalPreset || settings.activeGoalPreset || defaultState.activeGoalPreset || "";
+    settings.selectedSessionTemplate = getValidSessionTemplateId(defaultState, Object.assign({}, state, { settings: settings }));
+    state.settings = settings;
+    state.activeGoalPreset = settings.activeGoalPreset;
+    state.selectedSessionTemplate = settings.selectedSessionTemplate;
+    state.exercisePreferences = Object.assign({}, defaultState.exercisePreferences, state.exercisePreferences || {});
+    state.recoveryResponses = Array.isArray(state.recoveryResponses) ? state.recoveryResponses : [];
+    state.functionalSessions = Array.isArray(state.functionalSessions) ? state.functionalSessions : [];
+    state.volumeRecommendations = Array.isArray(state.volumeRecommendations) ? state.volumeRecommendations : [];
+    return state;
+  }
+
+  function normalizeState(rawState) {
+    var defaultState = getDefaultState();
+    var state = migrateLegacyState(defaultState, rawState || {});
+
+    state.userProfile = Object.assign({}, defaultState.userProfile, state.userProfile || {});
+    state.mesocycleSettings = Object.assign({}, defaultState.mesocycleSettings, state.mesocycleSettings || {});
+    state.rirTargets = state.rirTargets || defaultState.rirTargets;
+    state.musclePriorities = mergeById(defaultState.musclePriorities, state.musclePriorities);
+    state.injurySettings = Object.assign({}, defaultState.injurySettings, state.injurySettings || {});
+    state.exerciseLibrary = defaultState.exerciseLibrary;
+    state.goalPresets = defaultState.goalPresets;
+    state.sessionTemplates = defaultState.sessionTemplates;
+    state.completedWorkoutHistory = defaultState.completedWorkoutHistory;
+    state.nonHypertrophyTraining = Object.assign({}, defaultState.nonHypertrophyTraining, state.nonHypertrophyTraining || {});
+    state.recoveryResponseFields = Object.assign({}, defaultState.recoveryResponseFields, state.recoveryResponseFields || {});
+    state.workoutHistory = mergeSeedWorkoutHistory(state.workoutHistory, defaultState.completedWorkoutHistory, state);
+    state.activeSession = normalizeSessionMetadata(state.activeSession, state);
+    state.todayDraft = normalizeTodayDraft(state.todayDraft, state);
+    state.plannedWeek = normalizePlannedWeek(state.plannedWeek || defaultState.plannedWeek, state);
+    state = clearDraftsForCompletedSessions(state);
+    state.plannedWeek = normalizePlannedWeek(state.plannedWeek, state);
+    state.schemaVersion = APP_SCHEMA_VERSION;
+    return state;
+  }
+
+  function readLegacySplitState() {
+    var savedAppState = getItem(appStateKey, null) || {};
+
+    savedAppState.activeSession = getItem(activeSessionKey, savedAppState.activeSession || null);
+    savedAppState.todayDraft = getItem(todayDraftKey, savedAppState.todayDraft || null);
+    savedAppState.workoutHistory = getItem(workoutHistoryKey, savedAppState.workoutHistory || savedAppState.completedWorkoutHistory || []);
+    savedAppState.volumeRecommendations = getItem(volumeRecommendationsKey, savedAppState.volumeRecommendations || []);
+    return savedAppState;
+  }
+
+  function persistState(state) {
+    setItem(appStateKey, state);
+    setItem(activeSessionKey, state.activeSession);
+    setItem(todayDraftKey, state.todayDraft);
+    setItem(workoutHistoryKey, state.workoutHistory);
+    setItem(volumeRecommendationsKey, state.volumeRecommendations || []);
+    return state;
+  }
+
+  function loadState() {
+    var state = normalizeState(readLegacySplitState());
+
+    persistState(state);
+    return state;
   }
 
   function getAppState() {
-    var defaultState = getDefaultState();
-
-    runDefaultDataMigrations(defaultState);
-    return mergeAppState(defaultState, getItem(appStateKey, null));
+    return loadState();
   }
 
   function saveAppState(state) {
-    setItem(appStateKey, state);
-    return state;
+    return persistState(normalizeState(Object.assign({}, loadState(), state || {})));
   }
 
   function resetAppState() {
     removeItem(appStateKey);
-    return getDefaultState();
+    removeItem(activeSessionKey);
+    removeItem(todayDraftKey);
+    removeItem(workoutHistoryKey);
+    return loadState();
   }
 
   function getActiveSession() {
-    return getItem(activeSessionKey, null);
+    return loadState().activeSession;
   }
 
   function saveActiveSession(session) {
-    setItem(activeSessionKey, session);
-    return session;
+    var state = loadState();
+
+    state.activeSession = normalizeSessionMetadata(session, state);
+    return persistState(normalizeState(state)).activeSession;
   }
 
   function clearActiveSession() {
-    removeItem(activeSessionKey);
+    var state = loadState();
+
+    state.activeSession = null;
+    persistState(state);
   }
 
   function getTodayDraft() {
-    return getItem(todayDraftKey, null);
+    return loadState().todayDraft;
   }
 
   function saveTodayDraft(draft) {
-    setItem(todayDraftKey, draft);
-    return draft;
+    var state = loadState();
+
+    state.todayDraft = normalizeTodayDraft(draft, state);
+    return persistState(normalizeState(state)).todayDraft;
   }
 
   function clearTodayDraft() {
-    removeItem(todayDraftKey);
+    var state = loadState();
+
+    state.todayDraft = null;
+    persistState(state);
   }
 
   function getWorkoutHistory() {
-    ensureSeedWorkoutHistory();
-    return getItem("workoutHistory", []);
+    return loadState().workoutHistory;
   }
 
   function saveWorkoutHistory(history) {
-    setItem("workoutHistory", history || []);
-    return history || [];
+    var state = loadState();
+
+    state.workoutHistory = normalizeWorkoutHistory(history || [], state);
+    return persistState(normalizeState(state)).workoutHistory;
   }
 
   function addCompletedWorkout(session) {
-    var history = getWorkoutHistory();
+    var state = loadState();
+    var completed = normalizeSessionMetadata(session, state);
 
-    history.push(session);
-    saveWorkoutHistory(history);
+    if (!completed) {
+      return state.workoutHistory;
+    }
 
-    return history;
+    completed.status = "completed";
+    state.workoutHistory = normalizeWorkoutHistory((state.workoutHistory || []).concat([completed]), state);
+    return persistState(normalizeState(state)).workoutHistory;
   }
 
   function markPlannedSessionComplete(templateId) {
-    var state = getAppState();
+    var state = loadState();
     var plannedWeek = state.plannedWeek || {};
     var sessions = plannedWeek.sessions || [];
     var target = sessions.find(function (session) {
@@ -492,16 +559,16 @@
     target.status = "completed";
     target.completedAt = new Date().toISOString();
 
+    sessions.forEach(function (session) {
+      if (session.status === "current" && session.templateId !== templateId) {
+        session.status = session.status === "optional" ? "optional" : "planned";
+      }
+    });
+
     next = sessions.find(function (session) {
       return session.sessionNumber > target.sessionNumber && session.status !== "completed" && session.status !== "skipped" && session.status !== "optional";
     }) || sessions.find(function (session) {
       return session.status === "optional";
-    });
-
-    sessions.forEach(function (session) {
-      if (session.status === "current") {
-        session.status = session.templateId === templateId ? "completed" : "planned";
-      }
     });
 
     if (next && next.status !== "completed") {
@@ -518,33 +585,34 @@
       }),
       sessions: sessions
     });
-
-    state.selectedSessionTemplate = next ? next.templateId : state.selectedSessionTemplate;
-    saveAppState(state);
-
-    return state;
+    state.settings.selectedSessionTemplate = next ? next.templateId : state.settings.selectedSessionTemplate;
+    state.selectedSessionTemplate = state.settings.selectedSessionTemplate;
+    return persistState(normalizeState(state));
   }
 
   function clearWorkoutHistory() {
-    removeItem("workoutHistory");
+    var state = loadState();
+
+    state.workoutHistory = [];
+    persistState(normalizeState(state));
   }
 
   function getPendingVolumeRecommendations() {
-    return getItem(volumeRecommendationsKey, []);
+    return loadState().volumeRecommendations || [];
   }
 
   function savePendingVolumeRecommendations(recommendations) {
-    setItem(volumeRecommendationsKey, recommendations || []);
-    return recommendations || [];
+    var state = loadState();
+
+    state.volumeRecommendations = recommendations || [];
+    return persistState(state).volumeRecommendations;
   }
 
   function addVolumeRecommendation(recommendation) {
     var recommendations = getPendingVolumeRecommendations();
 
     recommendations.push(recommendation);
-    savePendingVolumeRecommendations(recommendations);
-
-    return recommendations;
+    return savePendingVolumeRecommendations(recommendations);
   }
 
   function updateVolumeRecommendationStatus(id, status) {
@@ -559,12 +627,55 @@
       return recommendation;
     });
 
-    savePendingVolumeRecommendations(recommendations);
+    return savePendingVolumeRecommendations(recommendations);
+  }
 
-    return recommendations;
+  function runStorageFixtureSelfTest() {
+    var defaultState = getDefaultState();
+    var seedSession2 = (defaultState.completedWorkoutHistory || [])[0];
+    var staleActiveSession = seedSession2 ? Object.assign({}, seedSession2, {
+      id: "stale-active-session-2",
+      status: "planned",
+      templateId: "",
+      sessionNumber: null
+    }) : null;
+    var fresh = normalizeState({});
+    var withCompletedSession2 = normalizeState({
+      workoutHistory: seedSession2 ? [seedSession2] : []
+    });
+    var withStaleActive = normalizeState({
+      activeSession: staleActiveSession,
+      workoutHistory: seedSession2 ? [seedSession2] : []
+    });
+    var withStaleDraft = normalizeState({
+      todayDraft: staleActiveSession ? { date: staleActiveSession.date, session: staleActiveSession } : null,
+      workoutHistory: seedSession2 ? [seedSession2] : []
+    });
+
+    function currentSessionNumber(state) {
+      var current = (state.plannedWeek.sessions || []).find(function (session) {
+        return session.status === "current";
+      });
+
+      return current ? current.sessionNumber : null;
+    }
+
+    return {
+      schemaVersion: APP_SCHEMA_VERSION,
+      freshStateLoads: fresh.schemaVersion === APP_SCHEMA_VERSION && Array.isArray(fresh.workoutHistory),
+      session2CompletedAdvancesToSession3: currentSessionNumber(withCompletedSession2) === 3,
+      staleSession2ActiveCleared: withStaleActive.activeSession === null,
+      staleTodayDraftCleared: withStaleDraft.todayDraft === null,
+      workoutHistoryDoesNotDuplicateSeed: withCompletedSession2.workoutHistory.filter(function (session) {
+        return session && session.id === seedSession2.id;
+      }).length === 1,
+      session3Current: currentSessionNumber(withCompletedSession2) === 3
+    };
   }
 
   window.TrainingStorage = {
+    APP_SCHEMA_VERSION: APP_SCHEMA_VERSION,
+    loadState: loadState,
     getItem: getItem,
     setItem: setItem,
     removeItem: removeItem,
@@ -586,6 +697,7 @@
     getPendingVolumeRecommendations: getPendingVolumeRecommendations,
     savePendingVolumeRecommendations: savePendingVolumeRecommendations,
     addVolumeRecommendation: addVolumeRecommendation,
-    updateVolumeRecommendationStatus: updateVolumeRecommendationStatus
+    updateVolumeRecommendationStatus: updateVolumeRecommendationStatus,
+    runStorageFixtureSelfTest: runStorageFixtureSelfTest
   };
 })();
