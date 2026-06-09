@@ -44,8 +44,33 @@
       </section>
 
       <section class="card">
+        <h2>Goal / Meso Builder</h2>
+        <p class="subtle">Choose a simple goal preset, preview what it changes, then apply it deliberately.</p>
+        <div class="form-grid">
+          <label>
+            Goal preset
+            <select id="goal-preset-select"></select>
+          </label>
+        </div>
+        <div id="goal-preset-summary" class="preset-summary"></div>
+        <button class="button button-primary" id="apply-goal-preset-button" type="button">Apply Goal Preset</button>
+      </section>
+
+      <section class="card">
+        <h2>Workout Suggestions</h2>
+        <p class="subtle">These are muscle-priority templates, not fixed training days. Selecting one saves a preference for reference.</p>
+        <div id="session-templates" class="stack"></div>
+      </section>
+
+      <section class="card">
         <h2>Priority Muscles</h2>
         <div id="priority-muscles" class="stack priority-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>Exercise Preferences</h2>
+        <p class="subtle">These guide the generator. Safety filters and muscle-priority logic still apply.</p>
+        <div id="exercise-preferences" class="stack"></div>
       </section>
 
       <section class="card">

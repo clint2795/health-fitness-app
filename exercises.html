@@ -14,21 +14,36 @@
 
     <main class="page">
       <section class="card">
-        <h2>Filters</h2>
+        <h2>Library Browser</h2>
         <div class="form-grid">
           <label>
-            Muscle
+            Search exercises
+            <input id="exercise-search" type="search" placeholder="Search name, equipment, notes">
+          </label>
+          <label>
+            Muscle Group
             <select id="exercise-filter-muscle">
-              <option value="all">All muscles</option>
+              <option value="all">All muscle groups</option>
             </select>
           </label>
-          <label class="checkbox-row">
-            <input id="filter-preferred-only" type="checkbox">
-            Preferred only
+          <label>
+            Status
+            <select id="exercise-filter-status">
+              <option value="all">All statuses</option>
+              <option value="preferred">Preferred</option>
+              <option value="conditional">Conditional</option>
+              <option value="neutral">Neutral</option>
+              <option value="prep">Prep</option>
+              <option value="avoid">Avoid</option>
+            </select>
           </label>
           <label class="checkbox-row">
             <input id="filter-show-avoid" type="checkbox">
             Show avoid exercises
+          </label>
+          <label class="checkbox-row">
+            <input id="filter-preferred-only" type="checkbox">
+            Preferred only
           </label>
           <label class="checkbox-row">
             <input id="filter-shoulder-friendly" type="checkbox">

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Change Exercise Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Change Exercise Test</h1>
+      <p class="subtle">Isolated modal and replacement flow</p>
+    </header>
+
+    <main class="page">
+      <section class="card workout-exercise-card" data-test-exercise-card>
+        <div class="card-header workout-card-header">
+          <div>
+            <h2 id="test-exercise-title">Cable lateral raise</h2>
+            <p class="subtle" id="test-exercise-meta">Side Delts - 12-25</p>
+          </div>
+          <div class="workout-header-actions">
+            <button class="button change-exercise-top-button" type="button" data-test-action="change-exercise">Change</button>
+          </div>
+        </div>
+        <p class="subtle" id="test-exercise-notes">Stable resistance and easy to keep pressing out of the movement.</p>
+      </section>
+    </main>
+
+    <section class="exercise-modal" id="test-change-exercise-modal" role="dialog" aria-modal="true" aria-labelledby="test-change-exercise-title" hidden>
+      <div class="exercise-modal-card">
+        <h2 id="test-change-exercise-title">Change Exercise</h2>
+        <p class="subtle" id="test-change-exercise-current">Current: Cable lateral raise</p>
+        <label>
+          Replacement exercise
+          <select id="test-change-exercise-select"></select>
+        </label>
+        <p class="subtle" id="test-change-exercise-details"></p>
+        <div class="button-row">
+          <button class="button button-primary" id="test-save-exercise-change-button" type="button">Use Exercise</button>
+          <button class="button" id="test-cancel-exercise-change-button" type="button">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <script src="js/change-exercise-test.js"></script>
+  </body>
+</html>

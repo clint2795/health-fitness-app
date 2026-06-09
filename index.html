@@ -40,11 +40,18 @@
         <div class="button-row">
           <button class="button" id="generate-session-button" type="button">Generate / Refresh Session</button>
           <button class="button button-primary" id="start-workout-button" type="button">Start Workout</button>
+          <button class="button" id="mark-active-completed-button" type="button" hidden>Mark as Completed</button>
+          <button class="button" id="discard-active-session-button" type="button" hidden>Discard and Generate New Session</button>
         </div>
       </section>
 
       <section class="card">
-        <h2>Prep Work</h2>
+        <h2>Planned Week</h2>
+        <div id="planned-week-sessions" class="stack"></div>
+      </section>
+
+      <section class="card">
+        <h2>Warm-up / Activation</h2>
         <div id="today-prep" class="stack"></div>
       </section>
 
@@ -80,6 +87,22 @@
         </div>
       </details>
     </main>
+
+    <section class="exercise-modal" id="today-change-exercise-modal" role="dialog" aria-modal="true" aria-labelledby="today-change-exercise-title" hidden>
+      <div class="exercise-modal-card">
+        <h2 id="today-change-exercise-title">Change Exercise</h2>
+        <p class="subtle" id="today-change-exercise-current"></p>
+        <label>
+          Replacement exercise
+          <select id="today-change-exercise-select"></select>
+        </label>
+        <p class="subtle" id="today-change-exercise-details"></p>
+        <div class="button-row">
+          <button class="button button-primary" id="today-save-exercise-change-button" type="button">Use Exercise</button>
+          <button class="button" id="today-cancel-exercise-change-button" type="button">Cancel</button>
+        </div>
+      </div>
+    </section>
 
     <nav class="bottom-nav" aria-label="Main navigation"></nav>
 
