@@ -877,6 +877,146 @@
     }
   ];
 
+  var completedWorkoutHistory = [
+    {
+      id: "completed-2026-06-09-session-2-back-width-biceps-rear-delts",
+      date: "2026-06-09",
+      title: "Session 2 - Back Width + Biceps + Rear Delts",
+      sessionNumber: 2,
+      templateId: "session-2-back-width-biceps-rear-delts",
+      mesocycleWeek: 1,
+      targetRir: "3 RIR",
+      muscles: ["backWidth", "biceps", "rearDelts", "triceps"],
+      status: "completed",
+      completedAt: "2026-06-09T12:00:00.000Z",
+      prep: [
+        {
+          exerciseId: "treadmill-warm-up",
+          name: "Pre-workout treadmill / warm-up",
+          primaryMuscle: "warm-up-activation",
+          plannedSets: 1,
+          repRange: "done",
+          targetRir: null,
+          status: "completed",
+          notes: "Pre-workout treadmill/warm-up completed. Not counted as hypertrophy working sets.",
+          loggedSets: []
+        }
+      ],
+      exercises: [
+        {
+          exerciseId: "underhand-grip-pulldown",
+          name: "Underhand grip pulldown",
+          primaryMuscle: "backWidth",
+          plannedSets: 3,
+          repRange: "8-15",
+          targetRir: "2-3 RIR",
+          status: "completed",
+          notes: "Warm-up performed first: 32kg x 15.",
+          loggedSets: [
+            { weightKg: "39", reps: "20", actualRir: "2-3", completed: true, skipped: false },
+            { weightKg: "39", reps: "16", actualRir: "2", completed: true, skipped: false },
+            { weightKg: "39", reps: "14", actualRir: "2", completed: true, skipped: false }
+          ]
+        },
+        {
+          exerciseId: "cable-lat-prayer",
+          name: "Cable lat prayer / straight-arm pulldown",
+          primaryMuscle: "backWidth",
+          plannedSets: 3,
+          repRange: "10-20",
+          targetRir: "",
+          status: "completed",
+          notes: "Straight-arm pulldown style.",
+          loggedSets: [
+            { weightKg: "18", reps: "21", actualRir: "", completed: true, skipped: false },
+            { weightKg: "18", reps: "17", actualRir: "", completed: true, skipped: false },
+            { weightKg: "18", reps: "14", actualRir: "", completed: true, skipped: false }
+          ]
+        },
+        {
+          exerciseId: "standing-high-cable-rear-delt-pulldown",
+          name: "Standing high cable rear-delt pulldown",
+          primaryMuscle: "rearDelts",
+          plannedSets: 3,
+          repRange: "9-19",
+          targetRir: "",
+          status: "completed",
+          notes: "4.5kg per side.",
+          loggedSets: [
+            { weightKg: "4.5/side", reps: "19", actualRir: "", completed: true, skipped: false },
+            { weightKg: "4.5/side", reps: "12", actualRir: "", completed: true, skipped: false },
+            { weightKg: "4.5/side", reps: "9", actualRir: "", completed: true, skipped: false }
+          ]
+        },
+        {
+          exerciseId: "chest-supported-rear-y-raise",
+          name: "Chest-supported rear Y raise",
+          primaryMuscle: "rearDelts",
+          plannedSets: 1,
+          repRange: "14-20",
+          targetRir: "",
+          status: "completed",
+          notes: "One set with 1 second hold.",
+          loggedSets: [
+            { weightKg: "4", reps: "14-20", actualRir: "", completed: true, skipped: false }
+          ]
+        },
+        {
+          exerciseId: "standing-forward-chest-height-cable-curl",
+          name: "Standing forward chest-height cable curl",
+          primaryMuscle: "biceps",
+          plannedSets: 3,
+          repRange: "10-20",
+          targetRir: "0-2 RIR",
+          status: "completed",
+          notes: "Cable curl variation.",
+          loggedSets: [
+            { weightKg: "6.8", reps: "14", actualRir: "1-2", completed: true, skipped: false },
+            { weightKg: "6.8", reps: "12", actualRir: "1-2", completed: true, skipped: false },
+            { weightKg: "6.8", reps: "12", actualRir: "0-1", completed: true, skipped: false }
+          ]
+        },
+        {
+          exerciseId: "rope-pushdown",
+          name: "Rope pushdown",
+          primaryMuscle: "triceps",
+          plannedSets: 3,
+          repRange: "10-20",
+          targetRir: "0-2 RIR",
+          status: "completed",
+          notes: "Extra triceps work performed during Session 2.",
+          loggedSets: [
+            { weightKg: "13.6", reps: "18-19", actualRir: "1", completed: true, skipped: false },
+            { weightKg: "13.6", reps: "10-11", actualRir: "0-1", completed: true, skipped: false },
+            { weightKg: "11.3", reps: "19", actualRir: "1-2", completed: true, skipped: false }
+          ]
+        }
+      ],
+      cardio: [
+        {
+          type: "pre-workout treadmill/warm-up",
+          status: "done",
+          notes: "Completed before lifting."
+        },
+        {
+          type: "post-workout walk",
+          distanceKm: 2,
+          durationMinutes: "20-21",
+          notes: "Post-workout walk."
+        }
+      ],
+      feedback: {
+        overall: {
+          fatigue: "moderate",
+          sleepRecovery: "okay",
+          notes: "Manually entered completed Session 2 workout."
+        },
+        muscles: {},
+        volumeSignals: {}
+      }
+    }
+  ];
+
   window.TrainingData = {
     userProfile: {
       goalName: "Cyprus Visual Phase",
@@ -909,11 +1049,12 @@
     exercisePreferences: exercisePreferences,
     goalPresets: goalPresets,
     sessionTemplates: sessionTemplates,
+    completedWorkoutHistory: completedWorkoutHistory,
     plannedWeek: {
       weekStartDate: null,
       currentWeekNumber: 1,
-      currentWeekSessionIndex: 2,
-      completedSessionTemplateIds: ["session-1-priority-upper"],
+      currentWeekSessionIndex: 3,
+      completedSessionTemplateIds: ["session-1-priority-upper", "session-2-back-width-biceps-rear-delts"],
       sessions: [
         {
           sessionNumber: 1,
@@ -928,16 +1069,16 @@
           sessionNumber: 2,
           templateId: "session-2-back-width-biceps-rear-delts",
           name: "Session 2 - Back Width + Biceps + Rear Delts",
-          status: "current",
-          plannedDate: null,
-          completedAt: null,
+          status: "completed",
+          plannedDate: "2026-06-09",
+          completedAt: "2026-06-09T12:00:00.000Z",
           skippedAt: null
         },
         {
           sessionNumber: 3,
           templateId: "session-3-legs-maintenance-side-delts",
           name: "Session 3 - Legs Maintenance + Side Delts",
-          status: "planned",
+          status: "current",
           plannedDate: null,
           completedAt: null,
           skippedAt: null
@@ -980,7 +1121,7 @@
       postExerciseNotes: ""
     },
     activeGoalPreset: "cyprus-visual-phase",
-    selectedSessionTemplate: "session-2-back-width-biceps-rear-delts",
+    selectedSessionTemplate: "session-3-legs-maintenance-side-delts",
     placeholderWorkout: [
       { muscle: "Upper chest", exercise: "Incline machine press", sets: 2 },
       { muscle: "Side delts", exercise: "Cable lateral raise", sets: 3 },

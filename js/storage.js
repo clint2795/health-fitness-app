@@ -4,6 +4,7 @@
   var activeSessionKey = "activeSession";
   var todayDraftKey = "todayDraft";
   var volumeRecommendationsKey = "volumeRecommendations";
+  var lastRepairKey = "lastStateRepair";
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -22,6 +23,7 @@
       exercisePreferences: clone(data.exercisePreferences || {}),
       goalPresets: clone(data.goalPresets || []),
       sessionTemplates: clone(data.sessionTemplates || []),
+      completedWorkoutHistory: clone(data.completedWorkoutHistory || []),
       plannedWeek: clone(data.plannedWeek || {}),
       nonHypertrophyTraining: clone(data.nonHypertrophyTraining || {}),
       recoveryResponseFields: clone(data.recoveryResponseFields || {}),
@@ -93,6 +95,115 @@
     });
   }
 
+  function getSeedCompletedTemplateIds(defaultState) {
+    return (defaultState.completedWorkoutHistory || []).map(function (session) {
+      return session.templateId;
+    }).filter(Boolean);
+  }
+
+  function getCompletedSession2(history) {
+    return (history || []).find(function (session) {
+      return session &&
+        session.status === "completed" &&
+        session.date === "2026-06-09" &&
+        (session.templateId === "session-2-back-width-biceps-rear-delts" || Number(session.sessionNumber) === 2);
+    }) || null;
+  }
+
+  function isPlannedSession2Completed(plannedWeek) {
+    var sessions = (plannedWeek || {}).sessions || [];
+    var session2 = sessions.find(function (session) {
+      return session.templateId === "session-2-back-width-biceps-rear-delts" || Number(session.sessionNumber) === 2;
+    });
+
+    return Boolean(session2 && session2.status === "completed");
+  }
+
+  function normalizeText(value) {
+    return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function hasSameMuscleFocus(a, b) {
+    var aMuscles = (a && a.muscles) || [];
+    var bMuscles = (b && b.muscles) || [];
+
+    if (!aMuscles.length || !bMuscles.length) {
+      return false;
+    }
+
+    return ["backWidth", "biceps", "rearDelts"].every(function (muscle) {
+      return aMuscles.indexOf(muscle) !== -1 && bMuscles.indexOf(muscle) !== -1;
+    });
+  }
+
+  function sessionLooksLikeSession2(session, completedSession2) {
+    var title = normalizeText(session && (session.title || session.name));
+    var focus = normalizeText(session && session.focus);
+    var completedTitle = normalizeText(completedSession2 && completedSession2.title);
+
+    if (!session || !completedSession2) {
+      return false;
+    }
+
+    if (session.templateId === "session-2-back-width-biceps-rear-delts" || Number(session.sessionNumber) === 2) {
+      return true;
+    }
+
+    if (completedTitle && title && title === completedTitle) {
+      return true;
+    }
+
+    if (title.indexOf("session 2") !== -1 && title.indexOf("back width") !== -1) {
+      return true;
+    }
+
+    if (focus.indexOf("back width") !== -1 && focus.indexOf("biceps") !== -1 && focus.indexOf("rear delts") !== -1) {
+      return true;
+    }
+
+    return session.date === completedSession2.date && hasSameMuscleFocus(session, completedSession2);
+  }
+
+  function getDraftSession(draft) {
+    return draft && draft.session ? draft.session : draft;
+  }
+
+  function advancePlannedWeekPastSession2(state) {
+    var plannedWeek = state.plannedWeek || {};
+    var sessions = plannedWeek.sessions || [];
+    var session3 = sessions.find(function (session) {
+      return session.templateId === "session-3-legs-maintenance-side-delts" || Number(session.sessionNumber) === 3;
+    });
+
+    sessions.forEach(function (session) {
+      if (session.templateId === "session-2-back-width-biceps-rear-delts" || Number(session.sessionNumber) === 2) {
+        session.status = "completed";
+        session.completedAt = session.completedAt || "2026-06-09T12:00:00.000Z";
+      } else if (session.status === "current") {
+        session.status = session.status === "optional" ? "optional" : "planned";
+      }
+    });
+
+    if (session3 && session3.status !== "completed" && session3.status !== "skipped") {
+      session3.status = "current";
+      session3.plannedDate = session3.plannedDate || getTodayDate();
+      plannedWeek.currentWeekSessionIndex = session3.sessionNumber;
+      state.selectedSessionTemplate = session3.templateId;
+    }
+
+    plannedWeek.completedSessionTemplateIds = sessions.filter(function (session) {
+      return session.status === "completed";
+    }).map(function (session) {
+      return session.templateId;
+    }).filter(function (id, index, list) {
+      return id && list.indexOf(id) === index;
+    });
+    plannedWeek.sessions = sessions;
+    state.plannedWeek = plannedWeek;
+
+    return state;
+  }
+
   function mergePlannedWeek(defaultState, savedState) {
     var defaultPlanned = defaultState.plannedWeek || {};
     var savedPlanned = savedState.plannedWeek || {};
@@ -119,8 +230,22 @@
     var current = sessions.find(function (session) {
       return session.status === "current";
     });
+    var seedCompletedTemplateIds = getSeedCompletedTemplateIds(defaultState);
     var currentIndex;
     var completed;
+
+    sessions.forEach(function (session) {
+      if (seedCompletedTemplateIds.indexOf(session.templateId) !== -1) {
+        session.status = "completed";
+        session.completedAt = session.completedAt || (defaultState.completedWorkoutHistory.find(function (historySession) {
+          return historySession.templateId === session.templateId;
+        }) || {}).completedAt || null;
+      }
+    });
+
+    current = sessions.find(function (session) {
+      return session.status === "current";
+    });
 
     if (!current) {
       current = sessions.find(function (session) {
@@ -196,8 +321,104 @@
     localStorage.removeItem(prefix + key);
   }
 
+  function getSeedWorkoutHistory() {
+    var data = window.TrainingData || {};
+
+    return clone(data.completedWorkoutHistory || []);
+  }
+
+  function ensureSeedWorkoutHistory() {
+    var seedHistory = getSeedWorkoutHistory();
+    var history = getItem("workoutHistory", []);
+    var changed = false;
+
+    seedHistory.forEach(function (seedSession) {
+      var exists = (history || []).some(function (session) {
+        return session.id === seedSession.id;
+      });
+
+      if (!exists) {
+        history.push(seedSession);
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setItem("workoutHistory", history);
+    }
+
+    return history || [];
+  }
+
+  function clearCompletedSessionDrafts(defaultState) {
+    var completedTemplateIds = getSeedCompletedTemplateIds(defaultState);
+    var activeSession = getItem(activeSessionKey, null);
+    var todayDraft = getItem(todayDraftKey, null);
+
+    if (activeSession && completedTemplateIds.indexOf(activeSession.templateId) !== -1) {
+      removeItem(activeSessionKey);
+    }
+
+    if (todayDraft && completedTemplateIds.indexOf(todayDraft.templateId || (todayDraft.session || {}).templateId) !== -1) {
+      removeItem(todayDraftKey);
+    }
+  }
+
+  function repairCompletedSession2State(defaultState) {
+    var savedState = getItem(appStateKey, null) || {};
+    var mergedState = mergeAppState(defaultState, savedState);
+    var history = ensureSeedWorkoutHistory();
+    var completedSession2 = getCompletedSession2(history);
+    var activeSession = getItem(activeSessionKey, null);
+    var todayDraft = getItem(todayDraftKey, null);
+    var repair = {
+      repairedAt: new Date().toISOString(),
+      reason: "Session 2 was already completed in planned week and workout history.",
+      clearedActiveSession: false,
+      clearedTodayDraft: false,
+      advancedPlannedWeekToSession3: false
+    };
+    var changed = false;
+
+    if (!completedSession2 || !isPlannedSession2Completed(mergedState.plannedWeek)) {
+      return;
+    }
+
+    if (activeSession && activeSession.status !== "completed" && sessionLooksLikeSession2(activeSession, completedSession2)) {
+      removeItem(activeSessionKey);
+      repair.clearedActiveSession = true;
+      changed = true;
+    }
+
+    if (todayDraft && sessionLooksLikeSession2(getDraftSession(todayDraft), completedSession2)) {
+      removeItem(todayDraftKey);
+      repair.clearedTodayDraft = true;
+      changed = true;
+    }
+
+    if ((mergedState.plannedWeek || {}).currentWeekSessionIndex !== 3 || mergedState.selectedSessionTemplate === "session-2-back-width-biceps-rear-delts") {
+      mergedState = advancePlannedWeekPastSession2(mergedState);
+      saveAppState(mergedState);
+      repair.advancedPlannedWeekToSession3 = true;
+      changed = true;
+    }
+
+    if (changed) {
+      setItem(lastRepairKey, repair);
+    }
+  }
+
+  function runDefaultDataMigrations(defaultState) {
+    ensureSeedWorkoutHistory();
+    repairCompletedSession2State(defaultState);
+    clearCompletedSessionDrafts(defaultState);
+  }
+
   function getAppState() {
-    return mergeAppState(getDefaultState(), getItem(appStateKey, null));
+    var defaultState = getDefaultState();
+
+    runDefaultDataMigrations(defaultState);
+    return mergeAppState(defaultState, getItem(appStateKey, null));
   }
 
   function saveAppState(state) {
@@ -237,6 +458,7 @@
   }
 
   function getWorkoutHistory() {
+    ensureSeedWorkoutHistory();
     return getItem("workoutHistory", []);
   }
 

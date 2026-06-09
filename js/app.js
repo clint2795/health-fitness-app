@@ -58,6 +58,7 @@
 
   var exerciseGroupOrder = exercisePreferenceCategories.slice();
   var todaySessionDraft = null;
+  var todayAdjustmentControlsBound = false;
 
   function escapeHtml(value) {
     return String(value)
@@ -153,6 +154,7 @@
     if (sessionReason) {
       sessionReason.textContent = session.why || "Session selected from remaining weekly set targets and recent training history.";
     }
+    setTodayDraft(session);
     if (generateButton) {
       generateButton.onclick = function () {
         if (!confirmBeforeReplacingToday()) {
@@ -202,7 +204,7 @@
         }
       };
     }
-    bindTodayAdjustmentControls(session);
+    bindTodayAdjustmentControls();
     bindTodayChangeExerciseModal();
     renderDebugPanel(state, session);
   }
@@ -366,10 +368,10 @@
   function renderTodayExerciseControls(index) {
     return (
       '<div class="today-adjust-row">' +
-        '<button class="button compact-button" type="button" data-today-change-exercise="' + index + '">Change Exercise</button>' +
-        '<button class="button compact-button" type="button" data-today-reduce-set="' + index + '">-1 Set</button>' +
-        '<button class="button compact-button" type="button" data-today-add-set="' + index + '">+1 Set</button>' +
-        '<button class="button compact-button danger-button" type="button" data-today-remove-exercise="' + index + '">Remove</button>' +
+        '<button class="button compact-button" type="button" data-action="change-exercise" data-index="' + index + '">Change Exercise</button>' +
+        '<button class="button compact-button" type="button" data-action="reduce-set" data-index="' + index + '">-1 Set</button>' +
+        '<button class="button compact-button" type="button" data-action="add-set" data-index="' + index + '">+1 Set</button>' +
+        '<button class="button compact-button danger-button" type="button" data-action="remove-exercise" data-index="' + index + '">Remove</button>' +
       '</div>'
     );
   }
@@ -397,6 +399,25 @@
   function setTodayDraft(session) {
     todaySessionDraft = JSON.parse(JSON.stringify(session));
     return todaySessionDraft;
+  }
+
+  function isSameSession(a, b) {
+    return Boolean(a && b && (
+      (a.id && b.id && a.id === b.id) ||
+      (a.templateId && b.templateId && a.templateId === b.templateId && a.date === b.date) ||
+      (a.title && b.title && a.title === b.title && a.date === b.date)
+    ));
+  }
+
+  function persistTodaySessionDraft(session) {
+    var activeSession = window.TrainingStorage.getActiveSession();
+
+    if (activeSession && activeSession.status !== "completed" && isSameSession(activeSession, session)) {
+      window.TrainingStorage.saveActiveSession(session);
+      return;
+    }
+
+    saveCurrentTodayDraft(session);
   }
 
   function updateTodayExerciseToLibraryItem(sessionExercise, libraryExercise) {
@@ -512,6 +533,7 @@
     }
 
     updateTodayExerciseToLibraryItem(exercise, replacement);
+    persistTodaySessionDraft(todaySessionDraft);
     closeTodayChangeExerciseModal();
     renderHomePage();
   }
@@ -541,43 +563,64 @@
     }
   }
 
-  function bindTodayAdjustmentControls(session) {
-    var container = document.querySelector("#today-exercises");
+  function getTodayActionButton(target) {
+    return target && target.closest ? target.closest("[data-action]") : null;
+  }
 
-    if (!container) {
+  function handleTodayAdjustmentClick(event) {
+    var button = getTodayActionButton(event.target);
+    var container = document.querySelector("#today-exercises");
+    var draft = todaySessionDraft;
+    var index;
+    var exercise;
+
+    if (!button || !container || !container.contains(button)) {
       return;
     }
 
-    container.querySelectorAll("[data-today-change-exercise], [data-today-reduce-set], [data-today-add-set], [data-today-remove-exercise]").forEach(function (button) {
-      button.addEventListener("click", function () {
-        var draft = setTodayDraft(session);
-        var index = Number(button.dataset.todayChangeExercise || button.dataset.todayReduceSet || button.dataset.todayAddSet || button.dataset.todayRemoveExercise);
-        var exercise = draft.exercises[index];
+    if (["change-exercise", "reduce-set", "add-set", "remove-exercise"].indexOf(button.dataset.action) === -1) {
+      return;
+    }
 
-        if (!exercise) {
-          return;
-        }
+    index = Number(button.dataset.index);
+    exercise = draft && draft.exercises ? draft.exercises[index] : null;
 
-        if (button.dataset.todayChangeExercise) {
-          openTodayChangeExerciseModal(draft, index);
-          return;
-        }
+    if (!exercise) {
+      return;
+    }
 
-        if (button.dataset.todayReduceSet) {
-          exercise.plannedSets = Math.max(1, Number(exercise.plannedSets) - 1);
-        }
+    if (button.dataset.action === "change-exercise") {
+      openTodayChangeExerciseModal(draft, index);
+      return;
+    }
 
-        if (button.dataset.todayAddSet) {
-          exercise.plannedSets = Math.min(8, Number(exercise.plannedSets) + 1);
-        }
+    if (button.dataset.action === "reduce-set") {
+      exercise.plannedSets = Math.max(1, Number(exercise.plannedSets) - 1);
+    }
 
-        if (button.dataset.todayRemoveExercise && confirm("Remove this exercise from today's draft session?")) {
-          draft.exercises.splice(index, 1);
-        }
+    if (button.dataset.action === "add-set") {
+      exercise.plannedSets = Math.min(8, Number(exercise.plannedSets) + 1);
+    }
 
-        renderHomePage();
-      });
-    });
+    if (button.dataset.action === "remove-exercise") {
+      if (!confirm("Remove this exercise from today's draft session?")) {
+        return;
+      }
+
+      draft.exercises.splice(index, 1);
+    }
+
+    persistTodaySessionDraft(draft);
+    renderHomePage();
+  }
+
+  function bindTodayAdjustmentControls() {
+    if (todayAdjustmentControlsBound) {
+      return;
+    }
+
+    document.addEventListener("click", handleTodayAdjustmentClick);
+    todayAdjustmentControlsBound = true;
   }
 
   function getActiveSetupSummary(state) {
@@ -674,9 +717,49 @@
   function buildDebugSummary(state, session) {
     var history = window.TrainingStorage.getWorkoutHistory();
     var activeSession = window.TrainingStorage.getActiveSession();
+    var todayDraft = window.TrainingStorage.getTodayDraft ? window.TrainingStorage.getTodayDraft() : null;
     var recommendations = window.TrainingStorage.getPendingVolumeRecommendations();
     var weeklyVolume = window.TrainingLogic.calculateWeeklyVolume(history);
     var remaining = window.TrainingLogic.calculateRemainingWeeklySets(state, weeklyVolume);
+    var plannedSessions = ((state.plannedWeek || {}).sessions || []);
+    var currentPlannedSession = plannedSessions.find(function (plannedSession) {
+      return plannedSession.status === "current";
+    }) || null;
+    var nextIncompleteSession = plannedSessions.find(function (plannedSession) {
+      return plannedSession.status !== "completed" && plannedSession.status !== "skipped" && plannedSession.status !== "optional";
+    }) || null;
+    var completedSession2 = history.find(function (historySession) {
+      return historySession &&
+        historySession.status === "completed" &&
+        historySession.date === "2026-06-09" &&
+        (historySession.templateId === "session-2-back-width-biceps-rear-delts" || Number(historySession.sessionNumber) === 2);
+    }) || null;
+    var draftSession = todayDraft && todayDraft.session ? todayDraft.session : todayDraft;
+    var stateInspector = {
+      activeSessionExists: activeSession ? "yes" : "no",
+      activeSessionTitle: activeSession ? (activeSession.title || activeSession.name || "") : "",
+      activeSessionTemplateId: activeSession ? (activeSession.templateId || "") : "",
+      activeSessionSessionNumber: activeSession ? (activeSession.sessionNumber || null) : null,
+      todayDraftDate: todayDraft ? (todayDraft.date || "") : "",
+      todayDraftTitle: draftSession ? (draftSession.title || draftSession.name || "") : "",
+      todayDraftTemplateId: draftSession ? (draftSession.templateId || todayDraft.templateId || "") : "",
+      todayDraftSessionNumber: draftSession ? (draftSession.sessionNumber || todayDraft.sessionNumber || null) : null,
+      plannedWeekCurrentSession: currentPlannedSession ? {
+        sessionNumber: currentPlannedSession.sessionNumber,
+        templateId: currentPlannedSession.templateId,
+        name: currentPlannedSession.name,
+        status: currentPlannedSession.status
+      } : null,
+      nextIncompleteSession: nextIncompleteSession ? {
+        sessionNumber: nextIncompleteSession.sessionNumber,
+        templateId: nextIncompleteSession.templateId,
+        name: nextIncompleteSession.name,
+        status: nextIncompleteSession.status
+      } : null,
+      workoutHistoryCount: history.length,
+      completedSession2SeedPresent: Boolean(completedSession2),
+      lastStateRepair: window.TrainingStorage.getItem("lastStateRepair", null)
+    };
     var appSummary = {
       goalName: state.userProfile.goalName,
       bodyweightKg: state.userProfile.bodyweightKg,
@@ -698,6 +781,7 @@
 
     return (
       '<div class="debug-grid">' +
+        renderDebugBlock("State inspector", stateInspector) +
         renderDebugBlock("Current app state", appSummary) +
         renderDebugBlock("Weekly volume", weeklyVolume) +
         renderDebugBlock("Remaining weekly sets", remaining) +
