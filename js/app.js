@@ -57,6 +57,40 @@
   ];
 
   var exerciseGroupOrder = exercisePreferenceCategories.slice();
+  var exerciseLibrarySections = [
+    {
+      parent: "Warm-up / Activation",
+      subgroups: ["Warm-up / Activation"]
+    },
+    {
+      parent: "Shoulders",
+      subgroups: ["Side Delts", "Rear Delts", "Front Delts", "Shoulder Health"]
+    },
+    {
+      parent: "Chest",
+      subgroups: ["Upper Chest", "Chest"]
+    },
+    {
+      parent: "Back",
+      subgroups: ["Back Width", "Back Thickness"]
+    },
+    {
+      parent: "Arms",
+      subgroups: ["Biceps", "Triceps"]
+    },
+    {
+      parent: "Legs",
+      subgroups: ["Quads", "Hamstrings", "Glutes", "Calves"]
+    },
+    {
+      parent: "Core / Abs",
+      subgroups: ["Core / Abs"]
+    },
+    {
+      parent: "Mobility / Functional Work",
+      subgroups: ["Mobility / Functional Work"]
+    }
+  ];
   var todaySessionDraft = null;
   var todayAdjustmentControlsBound = false;
 
@@ -976,7 +1010,17 @@
           '<div class="tag-row">' + template.targetMuscles.map(function (muscle) {
             return '<span class="tag">' + escapeHtml(muscle) + '</span>';
           }).join("") + '</div>' +
-          '<button class="button" type="button" data-select-template="' + escapeHtml(template.id) + '">' + (selected ? "Selected" : "Use / Preview Template") + '</button>' +
+          '<details class="template-preview" data-template-preview="' + escapeHtml(template.id) + '">' +
+            '<summary>Preview Template</summary>' +
+            '<div class="template-preview-body">' +
+              '<p class="subtle">' + escapeHtml(template.focus || template.purpose || "") + '</p>' +
+              '<p class="subtle">Recommended when: ' + escapeHtml(template.recommendedWhen || "No timing note") + '</p>' +
+              '<ol class="plain-list">' + (template.exercises || []).map(function (exercise) {
+                return '<li>' + escapeHtml(getMuscleLabel(exercise.muscle)) + " - " + escapeHtml(exercise.sets) + " sets" + (exercise.note ? " - " + escapeHtml(exercise.note) : "") + '</li>';
+              }).join("") + '</ol>' +
+            '</div>' +
+          '</details>' +
+          '<button class="button" type="button" data-select-template="' + escapeHtml(template.id) + '"' + (selected ? " disabled" : "") + '>' + (selected ? "Preferred" : "Set as Preferred") + '</button>' +
         '</article>'
       );
     }).join("");
@@ -984,32 +1028,23 @@
     container.querySelectorAll("[data-select-template]").forEach(function (button) {
       button.addEventListener("click", function () {
         var latest = collectSetupState();
-        var templateIndex = (latest.sessionTemplates || []).findIndex(function (template) {
-          return template.id === button.dataset.selectTemplate;
-        });
+        var template = getSessionTemplateById(latest, button.dataset.selectTemplate);
+
+        if (!template) {
+          return;
+        }
+
+        if (!confirm("This may replace your current selected workout/session preference. Continue?")) {
+          return;
+        }
 
         latest.selectedSessionTemplate = button.dataset.selectTemplate;
-        latest.plannedWeek = latest.plannedWeek || {};
-        if (templateIndex !== -1) {
-          latest.plannedWeek.currentWeekSessionIndex = templateIndex + 1;
-          latest.plannedWeek.sessions = (latest.plannedWeek.sessions || []).map(function (session) {
-            if (session.status === "current") {
-              session.status = session.templateId === button.dataset.selectTemplate ? "current" : "planned";
-            }
-
-            if (session.templateId === button.dataset.selectTemplate && session.status !== "completed") {
-              session.status = "current";
-            }
-
-            return session;
-          });
-        }
         window.TrainingStorage.saveAppState(latest);
         renderSessionTemplates(window.TrainingStorage.getAppState());
         var status = document.querySelector("#settings-save-status");
 
         if (status) {
-          status.textContent = "Template preference saved.";
+          status.textContent = "Preferred template saved. Planned week and active workout were not changed.";
         }
       });
     });
@@ -1074,19 +1109,20 @@
       }
 
       return (
-        '<article class="exercise-preference-card">' +
-          '<div class="card-header">' +
-            '<div>' +
-              '<h3>' + escapeHtml(getMuscleLabel(muscle)) + '</h3>' +
-              '<p class="subtle">Choose default movements for this category. Avoid choices are marked if shown.</p>' +
-            '</div>' +
-          '</div>' +
+        '<details class="exercise-preference-card preference-details">' +
+          '<summary>' +
+            '<span>' +
+              '<strong>' + escapeHtml(getMuscleLabel(muscle)) + '</strong>' +
+              '<em>' + escapeHtml(saved.filter(Boolean).length) + ' defaults set</em>' +
+            '</span>' +
+          '</summary>' +
+          '<p class="subtle">Choose default movements for this category. Avoid choices are marked if shown.</p>' +
           '<div class="preference-select-row">' +
             renderExercisePreferenceSelect(muscle, "First choice", options, saved[0]) +
             renderExercisePreferenceSelect(muscle, "Second choice", options, saved[1]) +
             renderExercisePreferenceSelect(muscle, "Backup", options, saved[2]) +
           '</div>' +
-        '</article>'
+        '</details>'
       );
     }).join("");
   }
@@ -1336,16 +1372,91 @@
     return value;
   }
 
+  function compactToken(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  function getExerciseTaxonomy(exercise) {
+    var primary = compactToken(exercise.primaryMuscle);
+    var name = compactToken(exercise.name);
+    var secondary = compactToken((exercise.secondaryMuscles || []).join(" "));
+
+    if (primary === "shoulderprep" || exercise.status === "prep" || name.indexOf("hang") !== -1) {
+      return { parent: "Warm-up / Activation", subgroup: "Warm-up / Activation", pattern: "Warm-up / Activation" };
+    }
+
+    if (primary === "sidedelts" || name.indexOf("lateralraise") !== -1 || name.indexOf("uprightrow") !== -1) {
+      return { parent: "Shoulders", subgroup: "Side Delts", pattern: "Delt isolation / abduction" };
+    }
+
+    if (primary === "reardelts" || name.indexOf("reardelt") !== -1 || name.indexOf("pecdeck") !== -1 || name.indexOf("facepull") !== -1) {
+      return { parent: "Shoulders", subgroup: "Rear Delts", pattern: "Rear-delt fly / pull" };
+    }
+
+    if (primary === "frontdelts" || secondary.indexOf("frontdelts") !== -1) {
+      return { parent: "Shoulders", subgroup: "Front Delts", pattern: "Pressing support" };
+    }
+
+    if (primary === "upperchest") {
+      return { parent: "Chest", subgroup: "Upper Chest", pattern: "Incline press / fly" };
+    }
+
+    if (primary === "chest") {
+      return { parent: "Chest", subgroup: "Chest", pattern: "Press / fly" };
+    }
+
+    if (primary === "backwidth" || name.indexOf("pulldown") !== -1 || name.indexOf("pullover") !== -1 || name.indexOf("latprayer") !== -1) {
+      return { parent: "Back", subgroup: "Back Width", pattern: "Vertical pull / lat isolation" };
+    }
+
+    if (primary === "backthickness" || name.indexOf("row") !== -1) {
+      return { parent: "Back", subgroup: "Back Thickness", pattern: "Row" };
+    }
+
+    if (primary === "biceps") {
+      return { parent: "Arms", subgroup: "Biceps", pattern: "Curl" };
+    }
+
+    if (primary === "triceps") {
+      return { parent: "Arms", subgroup: "Triceps", pattern: "Extension / pressdown" };
+    }
+
+    if (primary === "legs") {
+      if (name.indexOf("hamstring") !== -1 || name.indexOf("deadlift") !== -1 || name.indexOf("rdl") !== -1) {
+        return { parent: "Legs", subgroup: "Hamstrings", pattern: name.indexOf("deadlift") !== -1 || name.indexOf("rdl") !== -1 ? "Hip hinge / deadlift pattern" : "Knee flexion" };
+      }
+
+      if (name.indexOf("calf") !== -1) {
+        return { parent: "Legs", subgroup: "Calves", pattern: "Calf raise" };
+      }
+
+      if (name.indexOf("glute") !== -1 || secondary.indexOf("glutes") !== -1) {
+        return { parent: "Legs", subgroup: "Glutes", pattern: "Glute-biased lower body" };
+      }
+
+      return { parent: "Legs", subgroup: "Quads", pattern: "Squat / press / knee extension" };
+    }
+
+    if (primary === "abswaist" || primary === "core") {
+      return { parent: "Core / Abs", subgroup: "Core / Abs", pattern: "Core / trunk" };
+    }
+
+    return { parent: "Mobility / Functional Work", subgroup: "Mobility / Functional Work", pattern: "Movement practice" };
+  }
+
+  function getExerciseStatusReason(exercise) {
+    if (exercise.status === "preferred") return "Preferred default when it fits the session and equipment.";
+    if (exercise.status === "conditional") return "Conditional: useful when tolerated and appropriate for current limitations.";
+    if (exercise.status === "avoid") return "Avoid unless deliberately overridden.";
+    if (exercise.status === "prep") return "Prep: not counted as hypertrophy working sets.";
+    return "Neutral option.";
+  }
+
   function renderExerciseLibrary() {
     var container = document.querySelector("#exercise-library");
     var state = window.TrainingStorage.getAppState();
     var filteredExercises = filterExercises(state.exerciseLibrary, getExerciseFilters());
-    var muscles = getUniqueMuscles(filteredExercises).sort(function (a, b) {
-      var aIndex = exerciseGroupOrder.indexOf(a);
-      var bIndex = exerciseGroupOrder.indexOf(b);
-
-      return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex) || getMuscleLabel(a).localeCompare(getMuscleLabel(b));
-    });
+    var grouped = {};
 
     if (!container) {
       return;
@@ -1356,18 +1467,46 @@
       return;
     }
 
-    container.innerHTML = muscles.map(function (muscle) {
-      var cards = filteredExercises.filter(function (exercise) {
-        return normalizeMuscle(exercise.primaryMuscle) === muscle;
-      }).map(function (exercise) {
-        return renderCompactExerciseRow(exercise, state);
-      }).join("");
+    filteredExercises.forEach(function (exercise) {
+      var taxonomy = getExerciseTaxonomy(exercise);
+
+      grouped[taxonomy.parent] = grouped[taxonomy.parent] || {};
+      grouped[taxonomy.parent][taxonomy.subgroup] = grouped[taxonomy.parent][taxonomy.subgroup] || [];
+      grouped[taxonomy.parent][taxonomy.subgroup].push(exercise);
+    });
+
+    container.innerHTML = exerciseLibrarySections.map(function (section) {
+      var sectionGroups = grouped[section.parent];
+      var count = sectionGroups
+        ? Object.keys(sectionGroups).reduce(function (total, subgroup) {
+          return total + sectionGroups[subgroup].length;
+        }, 0)
+        : 0;
+
+      if (!count) {
+        return "";
+      }
 
       return (
-        '<section class="exercise-group">' +
-          '<h2>' + escapeHtml(getMuscleLabel(muscle)) + '</h2>' +
-          '<div class="stack">' + cards + '</div>' +
-        '</section>'
+        '<details class="exercise-group exercise-library-section">' +
+          '<summary><span>' + escapeHtml(section.parent) + '</span><em>' + count + ' movements</em></summary>' +
+          section.subgroups.map(function (subgroup) {
+            var exercises = (sectionGroups && sectionGroups[subgroup]) || [];
+
+            if (!exercises.length) {
+              return "";
+            }
+
+            return (
+              '<section class="exercise-subgroup">' +
+                '<h3>' + escapeHtml(subgroup) + '</h3>' +
+                '<div class="stack">' + exercises.map(function (exercise) {
+                  return renderCompactExerciseRow(exercise, state);
+                }).join("") + '</div>' +
+              '</section>'
+            );
+          }).join("") +
+        '</details>'
       );
     }).join("");
 
@@ -1375,10 +1514,14 @@
   }
 
   function renderCompactExerciseRow(exercise, state) {
+    var taxonomy = getExerciseTaxonomy(exercise);
     var riskReasons = getExerciseRiskReasons(exercise, state);
     var riskClass = riskReasons.length ? " exercise-risk-muted" : "";
     var riskMarkup = riskReasons.length
       ? '<p class="risk-note">Flagged with current settings: ' + escapeHtml(riskReasons.join(", ")) + '</p>'
+      : "";
+    var cautionBadge = riskReasons.length
+      ? '<span class="status-label status-conditional">Caution</span>'
       : "";
 
     return (
@@ -1386,21 +1529,24 @@
         '<button class="exercise-row-summary" type="button" data-toggle-exercise="' + escapeHtml(exercise.id) + '" aria-expanded="false">' +
           '<span>' +
             '<strong>' + escapeHtml(exercise.name) + '</strong>' +
-            '<span class="subtle">' + escapeHtml(getMuscleLabel(exercise.primaryMuscle)) + ' - ' + escapeHtml(exercise.equipment) + '</span>' +
+            '<span class="subtle">' + escapeHtml(taxonomy.subgroup) + ' - ' + escapeHtml(exercise.equipment) + '</span>' +
           '</span>' +
-          '<span class="status-label status-' + escapeHtml(exercise.status) + '">' + escapeHtml(exercise.status) + '</span>' +
+          '<span class="exercise-row-status">' +
+            cautionBadge +
+            '<span class="status-label status-' + escapeHtml(exercise.status) + '">' + escapeHtml(exercise.status) + '</span>' +
+          '</span>' +
         '</button>' +
-        '<div class="compact-safety-row">' +
-          '<span class="tag">shoulder: ' + escapeHtml(formatFriendliness(exercise.shoulderFriendly)) + '</span>' +
-          '<span class="tag">lower back: ' + escapeHtml(formatFriendliness(exercise.lowerBackFriendly)) + '</span>' +
-        '</div>' +
-        riskMarkup +
         '<div class="exercise-row-details" hidden>' +
+          riskMarkup +
           '<dl class="compact-details">' +
+            '<div><dt>Target</dt><dd>' + escapeHtml(taxonomy.subgroup) + '</dd></div>' +
+            '<div><dt>Equipment</dt><dd>' + escapeHtml(exercise.equipment || "Not specified") + '</dd></div>' +
+            '<div><dt>Movement pattern</dt><dd>' + escapeHtml(taxonomy.pattern) + '</dd></div>' +
             '<div><dt>Rep range</dt><dd>' + escapeHtml(exercise.repRange) + '</dd></div>' +
             '<div><dt>Secondary</dt><dd>' + escapeHtml((exercise.secondaryMuscles || []).join(", ") || "None") + '</dd></div>' +
             '<div><dt>Shoulder</dt><dd>' + escapeHtml(formatFriendliness(exercise.shoulderFriendly)) + '</dd></div>' +
             '<div><dt>Lower back</dt><dd>' + escapeHtml(formatFriendliness(exercise.lowerBackFriendly)) + '</dd></div>' +
+            '<div><dt>Status reason</dt><dd>' + escapeHtml(getExerciseStatusReason(exercise)) + '</dd></div>' +
           '</dl>' +
           '<p>' + escapeHtml(exercise.notes) + '</p>' +
           '<div class="button-row">' +
@@ -1447,6 +1593,11 @@
 
     muscle = normalizeMuscle(exercise.primaryMuscle);
     current = state.exercisePreferences[muscle] || [];
+
+    if (!confirm("This may replace your current selected exercise preference for " + getMuscleLabel(muscle) + ". Continue?")) {
+      return;
+    }
+
     state.exercisePreferences[muscle] = [exercise.id].concat(current.filter(function (id) {
       return id !== exercise.id;
     })).slice(0, 3);
