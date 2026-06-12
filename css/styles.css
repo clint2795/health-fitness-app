@@ -5,6 +5,7 @@
   --surface-soft: #111820;
   --text: #f3f6f7;
   --muted: #a3adb4;
+  --dim: #6f7a84;
   --border: #20272f;
   --border-soft: rgba(204, 219, 228, 0.1);
   --border-strong: rgba(204, 219, 228, 0.24);
@@ -1934,4 +1935,147 @@ body[data-page="workout"] .app-header h1 {
   .change-library-modal {
     align-items: center;
   }
+}
+
+/* v08.9 limited workout target pass removed on 2026-06-11 18:01 for cleanup/smoke test. Backup saved beside this file. */
+
+/* v09.0 workout renderer rescue - active set first, compact history */
+body[data-page="workout"] .workout-current-panel {
+  gap: 0.65rem;
+}
+
+body[data-page="workout"] .workout-current-panel .set-progress {
+  margin-top: -0.15rem;
+}
+
+body[data-page="workout"] .workout-active-set-panel {
+  padding: 0.85rem;
+  background: linear-gradient(180deg, rgba(46, 126, 166, 0.08), rgba(3, 4, 5, 0.92));
+  border: 1px solid rgba(85, 166, 210, 0.22);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 3px 0 0 rgba(85, 166, 210, 0.72);
+}
+
+body[data-page="workout"] .live-active-heading {
+  padding-bottom: 0.25rem;
+}
+
+body[data-page="workout"] .live-active-heading span {
+  color: var(--primary-bright);
+}
+
+body[data-page="workout"] .active-set-fields {
+  gap: 0.5rem;
+}
+
+body[data-page="workout"] .live-set-actions {
+  gap: 0.45rem;
+}
+
+body[data-page="workout"] .save-set-button {
+  min-height: 2.75rem;
+  background: linear-gradient(180deg, #24617f, #12384e);
+  border-color: rgba(85, 166, 210, 0.38);
+  box-shadow: none;
+}
+
+body[data-page="workout"] .set-history {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem 0 0;
+  border-top: 1px solid rgba(204, 219, 228, 0.08);
+}
+
+body[data-page="workout"] .set-history > summary {
+  min-height: 2.2rem;
+  padding: 0.45rem 0;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+body[data-page="workout"] .set-history > summary::-webkit-details-marker {
+  display: none;
+}
+
+body[data-page="workout"] .set-history > summary span::before {
+  content: "â–¸ ";
+  color: var(--primary-bright);
+}
+
+body[data-page="workout"] .set-history[open] > summary span::before {
+  content: "â–¾ ";
+}
+
+body[data-page="workout"] .set-history-list {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.2rem;
+}
+
+body[data-page="workout"] .set-progress-chip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.6rem;
+  align-items: center;
+  min-height: 2.45rem;
+  padding: 0.45rem 0.55rem;
+  background: #070a0d;
+  border: 1px solid rgba(204, 219, 228, 0.08);
+  border-radius: var(--radius-sm);
+}
+
+body[data-page="workout"] .set-progress-chip-main {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+body[data-page="workout"] .set-progress-chip-main strong {
+  color: #ffffff;
+  font-size: 0.92rem;
+}
+
+body[data-page="workout"] .set-progress-chip-main span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 780;
+}
+
+body[data-page="workout"] .set-progress-chip p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+body[data-page="workout"] .set-progress-chip.saved {
+  opacity: 0.76;
+}
+
+body[data-page="workout"] .set-progress-chip.active-set {
+  background: rgba(46, 126, 166, 0.08);
+  border-color: rgba(85, 166, 210, 0.28);
+  box-shadow: inset 2px 0 0 rgba(85, 166, 210, 0.78);
+}
+
+body[data-page="workout"] .set-progress-chip.future-set {
+  opacity: 0.54;
+}
+
+body[data-page="workout"] .set-progress-chip .compact-set-actions {
+  grid-column: 1 / -1;
+}
+
+body[data-page="workout"] .resolved-active-set {
+  background: rgba(95, 159, 116, 0.08);
+  border-color: rgba(95, 159, 116, 0.32);
+  box-shadow: inset 3px 0 0 rgba(95, 159, 116, 0.62);
+}
+
+body[data-page="workout"] .complete-exercise-not-ready {
+  color: #75808a;
+  background: #06090c;
+  border-color: rgba(204, 219, 228, 0.09);
+  box-shadow: none;
 }
